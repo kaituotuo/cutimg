@@ -1,0 +1,6 @@
+.DS_Store
+node_modules/
+playwright-report/
+test-results/
+cutimg-pages-upload-*.zip
+preview.png

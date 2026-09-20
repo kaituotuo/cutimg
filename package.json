@@ -1,0 +1,14 @@
+{
+  "name": "cutimg",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Split long images into precise, download-ready slices in the browser.",
+  "scripts": {
+    "test": "node tests/core.test.cjs",
+    "test:browser": "node tests/browser.test.cjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.62.1"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="cutimg：在浏览器中添加、拖动分割线，将长图切成小图并打包下载。">
+  <title>cutimg · 长图分割</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand-block">
+      <div class="brand-mark" aria-hidden="true">
+        <svg class="cutimg-mark" viewBox="0 0 32 32" focusable="false">
+          <rect class="mark-frame" x="5" y="4" width="20" height="24" rx="2.5"></rect>
+          <path class="mark-mountain" d="M7.5 22.5 13 16l3.4 3.6 3.1-3.3 3 3.4"></path>
+          <path class="mark-cut" d="M5 14.5h20" stroke-dasharray="2.5 2.5"></path>
+          <path class="mark-slice" d="M23.5 6.5 28 11M28 6.5l-4.5 4.5"></path>
+        </svg>
+      </div>
+      <div class="brand-name" role="img" aria-label="cutimg">
+        <span class="brand-c" aria-hidden="true">C</span><span class="brand-ut" aria-hidden="true">ut</span>
+        <span class="brand-img" aria-hidden="true">
+          <span class="img-measure">img</span>
+          <span class="img-half img-upper">img</span>
+          <span class="img-half img-lower">img</span>
+        </span>
+      </div>
+      <span class="brand-divider"></span>
+      <span class="product-name">长图分割</span>
+    </div>
+    <div class="top-actions">
+      <span class="privacy-badge" title="图片仅在当前浏览器处理，不上传服务器"><i data-lucide="shield-check"></i><span>本地处理</span></span>
+      <button class="btn btn-quiet" id="replace-button" type="button" hidden><i data-lucide="image-up"></i><span>更换图片</span></button>
+      <button class="btn btn-primary top-export" id="top-export" type="button" title="下载全部 ZIP" aria-label="下载全部 ZIP" disabled><i data-lucide="download"></i><span>下载全部</span></button>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <section class="work-column" aria-label="图片分割画布">
+      <div class="work-toolbar">
+        <div class="file-heading">
+          <div class="file-icon" aria-hidden="true"><i data-lucide="image"></i></div>
+          <div class="file-heading-text">
+            <strong id="file-title">新建分割</strong>
+            <small id="file-meta">上传长图开始</small>
+          </div>
+        </div>
+        <div class="toolbar-tools">
+          <div class="tool-pair" role="group" aria-label="编辑历史">
+            <button type="button" class="icon-btn" id="undo-button" title="撤销" aria-label="撤销" disabled><i data-lucide="undo-2"></i></button>
+            <button type="button" class="icon-btn" id="redo-button" title="重做" aria-label="重做" disabled><i data-lucide="redo-2"></i></button>
+          </div>
+          <span class="toolbar-separator"></span>
+          <div class="zoom-tools" role="group" aria-label="预览缩放">
+            <button type="button" class="icon-btn" id="zoom-out" title="缩小预览" aria-label="缩小预览" disabled><i data-lucide="minus"></i></button>
+            <span id="zoom-label" class="zoom-label">100%</span>
+            <button type="button" class="icon-btn" id="zoom-in" title="放大预览" aria-label="放大预览" disabled><i data-lucide="plus"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="canvas-shell" id="canvas-shell">
+        <div class="empty-state" id="empty-state">
+          <div class="drop-target" id="drop-target">
+            <div class="sample-graphic" aria-hidden="true">
+              <div class="sample-sheet"><img src="assets/demo-long.png" alt=""><span class="sample-line sample-line-one"></span><span class="sample-line sample-line-two"></span></div>
+              <div class="sample-piece sample-piece-one"></div>
+              <div class="sample-piece sample-piece-two"></div>
+              <div class="sample-piece sample-piece-three"></div>
+              <span class="sample-scissors"><i data-lucide="scissors"></i></span>
+            </div>
+            <h1>上传长图，开始分割</h1>
+            <p>拖放图片到这里，或从电脑选择</p>
+            <button class="btn btn-primary upload-cta" id="upload-button" type="button"><i data-lucide="upload"></i><span>选择图片</span></button>
+            <span class="file-allow">支持 PNG、JPG、WebP · 单张不超过 100 MB</span>
+          </div>
+          <button class="sample-button" id="sample-button" type="button"><i data-lucide="play"></i><span>试用示例长图</span><i data-lucide="arrow-up-right"></i></button>
+        </div>
+
+        <div class="canvas-scroll" id="canvas-scroll" hidden>
+          <div class="preview-art" id="preview-art">
+            <img class="preview-image" id="preview-image" alt="待分割的长图" draggable="false">
+            <div class="line-layer" id="line-layer"></div>
+          </div>
+        </div>
+        <div class="canvas-watermark" id="canvas-watermark" hidden>cutimg <span>·</span> 分割预览</div>
+      </div>
+
+      <div class="statusbar">
+        <span id="status-image"><span class="status-dot"></span>等待图片</span>
+        <span id="status-lines">0 条分割线</span>
+      </div>
+    </section>
+
+    <aside class="side-panel" aria-label="分割设置与导出">
+      <div class="panel-heading">
+        <div><span class="panel-kicker">CUTIMG / EDITOR</span><h2>分割设置</h2></div>
+        <span class="panel-count" id="panel-count">00</span>
+      </div>
+      <div class="control-stack">
+        <div class="segmented" role="group" aria-label="分割方式">
+          <button id="mode-equal" type="button" class="segment-tab active" aria-pressed="true"><i data-lucide="rows-3"></i><span>等高分割</span></button>
+          <button id="mode-manual" type="button" class="segment-tab" aria-pressed="false"><i data-lucide="move-horizontal"></i><span>手动分割</span></button>
+        </div>
+
+        <div id="equal-controls" class="mode-controls">
+          <div class="field-label">分割依据</div>
+          <div class="basis-tabs" role="group" aria-label="等高分割依据">
+            <button id="basis-height" type="button" class="basis-tab active" aria-pressed="true">按目标高度</button>
+            <button id="basis-count" type="button" class="basis-tab" aria-pressed="false">按张数</button>
+          </div>
+          <div class="number-field" id="height-field">
+            <label for="height-input">每张约</label>
+            <div class="number-stepper" role="group" aria-label="目标高度">
+              <button class="stepper-button" id="height-decrement" type="button" aria-label="目标高度减 1 像素" title="减 1 像素"><i data-lucide="minus"></i></button>
+              <input id="height-input" type="number" min="2" step="1" value="2000" inputmode="numeric" aria-label="目标高度，单位像素">
+              <button class="stepper-button" id="height-increment" type="button" aria-label="目标高度加 1 像素" title="加 1 像素"><i data-lucide="plus"></i></button>
+            </div>
+            <span class="field-unit">px</span>
+          </div>
+          <div class="number-field" id="count-field" hidden>
+            <label for="count-input">分成</label>
+            <div class="number-stepper" role="group" aria-label="切片张数">
+              <button class="stepper-button" id="count-decrement" type="button" aria-label="切片张数减 1" title="减 1 张"><i data-lucide="minus"></i></button>
+              <input id="count-input" type="number" min="2" max="100" step="1" value="15" inputmode="numeric" aria-label="切片张数">
+              <button class="stepper-button" id="count-increment" type="button" aria-label="切片张数加 1" title="加 1 张"><i data-lucide="plus"></i></button>
+            </div>
+            <span class="field-unit">张</span>
+          </div>
+          <button class="btn btn-dark apply-button" id="apply-equal" type="button" disabled><i data-lucide="split"></i><span>应用等高分割</span></button>
+        </div>
+
+        <div id="manual-controls" class="mode-controls" hidden>
+          <div class="manual-actions">
+            <button class="btn btn-outline add-line-button" id="add-line" type="button" disabled><i data-lucide="plus"></i><span>添加分割线</span></button>
+            <button class="icon-btn clear-lines-button" id="clear-lines" type="button" title="清空全部分割线" aria-label="清空全部分割线" disabled><i data-lucide="trash-2"></i></button>
+          </div>
+          <div class="selected-line" id="selected-line" hidden>
+            <label class="number-field"><span>分割线位置</span><input id="line-position" type="number" min="1" step="1" inputmode="numeric"><span class="field-unit">px</span></label>
+            <button class="icon-btn danger-icon" id="delete-line" type="button" title="删除所选分割线" aria-label="删除所选分割线"><i data-lucide="trash-2"></i></button>
+          </div>
+        </div>
+
+        <div class="result-metrics" aria-live="polite">
+          <div><span>切片数量</span><strong id="slice-total">--</strong></div>
+          <div><span>切片高度</span><strong id="slice-height">--</strong></div>
+        </div>
+      </div>
+
+      <div class="results-area">
+        <div class="results-title"><h3>切片预览</h3><span id="results-count">0 张</span></div>
+        <div class="results-list" id="results-list"><div class="results-empty"><i data-lucide="layers-2"></i><span>暂无切片</span></div></div>
+      </div>
+
+      <div class="export-footer">
+        <div class="export-progress" id="export-progress" hidden><div class="progress-track"><span id="progress-fill"></span></div><div class="progress-line"><span id="progress-label">准备导出</span><button id="cancel-export" type="button">取消</button></div></div>
+        <button class="btn btn-primary export-main" id="download-all" type="button" disabled><i data-lucide="download"></i><span>下载全部 ZIP</span></button>
+        <span class="export-meta" id="export-meta">PNG 原图尺寸 · 浏览器本地生成</span>
+      </div>
+    </aside>
+  </main>
+
+  <input type="file" id="file-input" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp" hidden>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="assets/lucide.min.js"></script>
+  <script src="core.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
