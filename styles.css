@@ -123,12 +123,21 @@ html[lang^="zh"] .language-option[data-language="en"], html[lang^="en"] .languag
 .preview-art { --zoom: 100%; position: relative; display: block; width: var(--zoom); max-width: none; min-width: 1px; margin: 0 auto; background: white; box-shadow: 0 8px 28px rgba(31, 48, 65, .14); text-align: left; user-select: none; }
 .preview-image { display: block; width: 100%; height: auto; max-width: none; cursor: crosshair; -webkit-user-drag: none; }
 .line-layer { position: absolute; inset: 0; pointer-events: none; }
-.guide { position: absolute; z-index: 2; left: 0; right: 0; height: 32px; transform: translateY(-50%); border: 0; padding: 0; background: transparent; text-align: left; cursor: ns-resize; touch-action: none; pointer-events: auto; }
-.guide::before { content: ""; position: absolute; top: 15px; left: 0; right: 0; border-top: 2px dashed var(--coral); filter: drop-shadow(0 1px 1px white); }
-.guide:hover::before, .guide.active::before { border-top-style: solid; border-top-width: 3px; }
-.guide-label { position: absolute; top: 2px; left: 10px; display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 9px; border-radius: 4px; background: #ce5745; box-shadow: 0 2px 7px rgba(38, 27, 26, .18); color: white; font-size: 11px; font-weight: 750; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.guide { position: absolute; left: 0; right: 0; height: 32px; margin-top: -16px; pointer-events: none; }
+.guide-drag { position: absolute; z-index: 1; inset: 0; width: 100%; border: 0; padding: 0; background: transparent; cursor: ns-resize; touch-action: none; pointer-events: auto; }
+.guide-drag::before { content: ""; position: absolute; top: 15px; left: 0; right: 0; border-top: 2px dashed var(--coral); filter: drop-shadow(0 1px 1px white); }
+.guide-drag:hover::before, .guide.active .guide-drag::before { border-top-style: solid; border-top-width: 3px; }
+.guide-controls { position: absolute; z-index: 2; top: 0; left: calc(10px + var(--guide-offset, 0px)); display: flex; align-items: center; gap: 3px; pointer-events: none; }
+.guide-label { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 9px; border-radius: 4px; background: #ce5745; box-shadow: 0 2px 7px rgba(38, 27, 26, .18); color: white; font-size: 11px; font-weight: 750; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .guide-label .lucide { width: 13px; height: 13px; }
 .guide.active .guide-label { background: #9f3e32; }
+.guide-delete { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 1px solid #d99489; border-radius: 4px; color: #a64035; background: #fff8f6; box-shadow: 0 2px 7px rgba(38, 27, 26, .12); pointer-events: auto; touch-action: manipulation; }
+.guide-delete:hover:not(:disabled) { color: white; border-color: #a64035; background: #a64035; }
+.guide-delete:disabled { color: #aab4c0; border-color: #d9dee4; background: #f2f4f6; }
+.guide-delete .lucide { width: 13px; height: 13px; stroke-width: 2.2; }
+.line-layer.dense-guides .guide-label { display: none; }
+.line-layer.dense-guides .guide-drag { top: 14px; bottom: auto; height: 4px; }
+.line-layer.dense-guides .guide-drag::before { top: 1px; }
 .canvas-watermark { position: absolute; bottom: 12px; left: 16px; z-index: 2; padding: 5px 8px; border-radius: 4px; color: #596776; background: rgba(255,255,255,.85); font-size: 11px; font-weight: 700; pointer-events: none; }
 .canvas-watermark span { color: var(--coral); }
 .statusbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 0 25px; border-top: 1px solid var(--line); color: #697789; background: white; font-size: 11px; font-variant-numeric: tabular-nums; }

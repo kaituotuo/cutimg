@@ -328,6 +328,7 @@ async function run() {
     assert.equal((await page.locator('#language-toggle').innerText()).trim(), 'EN');
     assert.equal(await page.locator('#status-lines').textContent(), '1 cut line');
     assert.equal(await page.locator('.row-copy strong').first().textContent(), 'Slice 01');
+    assert.equal(await page.locator('.guide-delete').first().getAttribute('aria-label'), 'Delete cut line 1 at 721 px');
     assert.equal(await heightInput.inputValue(), '731');
     assert.equal(await page.locator('#language-toggle').getAttribute('aria-label'), 'Switch to Chinese');
     assert.deepEqual({
@@ -337,6 +338,7 @@ async function run() {
     }, stateBeforeLanguageSwitch, 'language switching must preserve the active edit state');
     await page.locator('#language-toggle').click();
     assert.match(await page.locator('html').getAttribute('lang'), /^zh/);
+    assert.equal(await page.locator('.guide-delete').first().getAttribute('aria-label'), '删除第 1 条分割线（721 px）');
     assert.equal(await heightInput.inputValue(), '731');
     await heightInput.fill(String(Math.ceil(sourceHeight / 2)));
     await assertNoHorizontalOverflow(page, 1440);
@@ -449,9 +451,15 @@ async function run() {
     const equalSections = sectionsForGuides(equalGuides);
     await assertWysiwygThumbnails(page, equalSections);
 
-    await page.locator('.row-select').last().click();
     await page.locator('#mode-manual').click();
-    await page.locator('#add-line').click();
+    const previewBox = await page.locator('#preview-image').boundingBox();
+    assert.ok(previewBox && previewBox.width > 2 && previewBox.height > 2);
+    await page.locator('#preview-image').click({
+      position: {
+        x: Math.max(1, Math.min(previewBox.width - 1, previewBox.width / 2)),
+        y: Math.max(1, Math.min(previewBox.height - 1, previewBox.height * 1395 / sourceHeight))
+      }
+    });
     await page.locator('#line-position').fill('1400');
     await page.locator('#line-position').dispatchEvent('change');
     assert.equal(await page.locator('.guide').count(), equalGuideCount + 1);
@@ -466,8 +474,6 @@ async function run() {
     await page.waitForTimeout(250);
     await page.screenshot({ path: path.join(imageDir, 'cutimg-desktop-editor.png') });
 
-    const previewBox = await page.locator('#preview-image').boundingBox();
-    assert.ok(previewBox && previewBox.width > 2 && previewBox.height > 2);
     await page.locator('#preview-image').click({
       position: {
         x: Math.max(1, Math.min(previewBox.width - 1, previewBox.width / 2)),
@@ -481,14 +487,14 @@ async function run() {
     await page.locator('#mode-manual').click();
     await page.locator('#add-line').click();
     assert.equal(await page.locator('.guide').count(), equalGuideCount + 1);
-    const before = await page.locator('.guide').first().getAttribute('title');
+    const before = await page.locator('.guide-drag').first().getAttribute('title');
     const firstGuide = await page.locator('.guide').first().boundingBox();
     const guideDragX = firstGuide.x + firstGuide.width / 2;
     await page.mouse.move(guideDragX, firstGuide.y + 16);
     await page.mouse.down();
     await page.mouse.move(guideDragX, firstGuide.y + 55, { steps: 5 });
     await page.mouse.up();
-    const moved = await page.locator('.guide').first().getAttribute('title');
+    const moved = await page.locator('.guide-drag').first().getAttribute('title');
     assert.notEqual(moved, before);
     const manualHeight = Number(moved.match(/(\d+) px$/)[1]);
     const manualDownload = page.waitForEvent('download', { timeout: 120000 });
@@ -527,9 +533,148 @@ async function run() {
     assert.match(all.suggestedFilename(), new RegExp(`cutimg-${equalSliceCount}\\.zip$`));
     await all.saveAs(path.join(imageDir, 'cutimg-qa-all.zip'));
     assert.deepEqual(errors, []);
+
+    const manualPage = await context.newPage();
+    manualPage.on('pageerror', (error) => errors.push(error.message));
+    await manualPage.goto(url);
+    await manualPage.locator('#sample-button').click();
+    await manualPage.locator('.result-row').first().waitFor();
+    await manualPage.locator('#mode-manual').click();
+    assert.deepEqual(await manualPage.locator('.guide').evaluateAll((guides) =>
+      guides.map((guide) => Number(guide.dataset.position))), [721]);
+    assert.equal(await manualPage.locator('.guide-delete').count(), 1);
+    assert.equal(await manualPage.locator('button button').count(), 0);
+
+    await manualPage.locator('#add-line').click();
+    assert.deepEqual(await manualPage.locator('.guide').evaluateAll((guides) =>
+      guides.map((guide) => Number(guide.dataset.position))), [481, 962]);
+    assert.equal(await manualPage.locator('.guide-delete').count(), 2);
+    assert.deepEqual(await manualPage.locator('.guide-delete').evaluateAll((buttons) =>
+      buttons.map((button) => button.getAttribute('aria-label'))),
+    ['删除第 1 条分割线（481 px）', '删除第 2 条分割线（962 px）']);
+    assert.match(await manualPage.locator('.guide').last().getAttribute('class'), /active/);
+
+    const stableGuidesBeforeDragUndo = await manualPage.locator('.guide').evaluateAll((guides) =>
+      guides.map((guide) => Number(guide.dataset.position)));
+    const dragBeforeUndo = await manualPage.locator('.guide-drag').first().boundingBox();
+    assert.ok(dragBeforeUndo);
+    await manualPage.mouse.move(dragBeforeUndo.x + dragBeforeUndo.width / 2, dragBeforeUndo.y + dragBeforeUndo.height / 2);
+    await manualPage.mouse.down();
+    await manualPage.mouse.move(dragBeforeUndo.x + dragBeforeUndo.width / 2, dragBeforeUndo.y + 25, { steps: 3 });
+    await manualPage.keyboard.press('Control+z');
+    await manualPage.mouse.up();
+    assert.deepEqual(await manualPage.locator('.guide').evaluateAll((guides) =>
+      guides.map((guide) => Number(guide.dataset.position))), stableGuidesBeforeDragUndo);
+    await manualPage.locator('#undo-button').click();
+    assert.deepEqual(await manualPage.locator('.guide').evaluateAll((guides) =>
+      guides.map((guide) => Number(guide.dataset.position))), [721]);
+    await manualPage.locator('#redo-button').click();
+    assert.deepEqual(await manualPage.locator('.guide').evaluateAll((guides) =>
+      guides.map((guide) => Number(guide.dataset.position))), stableGuidesBeforeDragUndo);
+
+    await manualPage.locator('#add-line').click();
+    assert.deepEqual(await manualPage.locator('.guide').evaluateAll((guides) =>
+      guides.map((guide) => Number(guide.dataset.position))), [360, 721, 1082]);
+    assert.equal(await manualPage.locator('.guide-delete').count(), 3);
+    await manualPage.locator('.guide-delete').nth(1).click();
+    assert.deepEqual(await manualPage.locator('.guide').evaluateAll((guides) =>
+      guides.map((guide) => Number(guide.dataset.position))), [360, 1082]);
+    assert.equal(await manualPage.locator('.guide-delete').nth(1).evaluate((button) => button === document.activeElement), true);
+    await manualPage.locator('#undo-button').click();
+    assert.deepEqual(await manualPage.locator('.guide').evaluateAll((guides) =>
+      guides.map((guide) => Number(guide.dataset.position))), [360, 721, 1082]);
+    await manualPage.locator('#redo-button').click();
+    assert.deepEqual(await manualPage.locator('.guide').evaluateAll((guides) =>
+      guides.map((guide) => Number(guide.dataset.position))), [360, 1082]);
+    await manualPage.locator('#undo-button').click();
+    await manualPage.locator('.guide-drag').first().focus();
+    await manualPage.keyboard.press('Delete');
+    assert.deepEqual(await manualPage.locator('.guide').evaluateAll((guides) =>
+      guides.map((guide) => Number(guide.dataset.position))), [721, 1082]);
+    assert.equal(await manualPage.locator('.guide-drag').first().evaluate((button) => button === document.activeElement), true);
+    await manualPage.locator('#undo-button').click();
+    await manualPage.locator('.guide-delete').last().focus();
+    await manualPage.keyboard.press('Enter');
+    assert.deepEqual(await manualPage.locator('.guide').evaluateAll((guides) =>
+      guides.map((guide) => Number(guide.dataset.position))), [360, 721]);
+    assert.equal(await manualPage.locator('.guide-delete').last().evaluate((button) => button === document.activeElement), true);
+    await manualPage.locator('#undo-button').click();
+    await manualPage.screenshot({ path: path.join(imageDir, 'cutimg-manual-guides.png') });
+
+    await manualPage.locator('.guide-drag').first().click();
+    await manualPage.locator('#line-position').fill('400');
+    await manualPage.locator('#line-position').dispatchEvent('change');
+    assert.deepEqual(await manualPage.locator('.guide').evaluateAll((guides) =>
+      guides.map((guide) => Number(guide.dataset.position))), [400, 721, 1082]);
+    await manualPage.locator('#add-line').click();
+    assert.deepEqual(await manualPage.locator('.guide').evaluateAll((guides) =>
+      guides.map((guide) => Number(guide.dataset.position))), [288, 577, 865, 1154]);
+    await manualPage.locator('#undo-button').click();
+    assert.deepEqual(await manualPage.locator('.guide').evaluateAll((guides) =>
+      guides.map((guide) => Number(guide.dataset.position))), [400, 721, 1082]);
+
+    const tallPng = Buffer.from(await manualPage.evaluate(async () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 640;
+      canvas.height = 4000;
+      const context = canvas.getContext('2d');
+      context.fillStyle = '#f4f7fa';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+      return Array.from(new Uint8Array(await blob.arrayBuffer()));
+    }));
+    await manualPage.locator('#file-input').setInputFiles({ name: 'dense-guides.png', mimeType: 'image/png', buffer: tallPng });
+    await manualPage.waitForFunction(() => document.querySelector('#file-title')?.textContent === 'dense-guides.png');
+    await manualPage.locator('#basis-count').click();
+    await manualPage.locator('#count-input').fill('100');
+    await manualPage.locator('#apply-equal').click();
+    await manualPage.locator('#mode-manual').click();
+    assert.equal(await manualPage.locator('.guide').count(), 99);
+    assert.equal(await manualPage.locator('#add-line').isDisabled(), true);
+    assert.ok(Number(await manualPage.locator('#line-layer').getAttribute('data-guide-lanes')) > 3);
+    await manualPage.locator('.guide-drag').first().focus();
+    await manualPage.keyboard.press('Shift+ArrowUp');
+    assert.equal(await manualPage.locator('.guide').first().getAttribute('data-position'), '30');
+    await manualPage.locator('#undo-button').click();
+    assert.equal(await manualPage.locator('.guide').first().getAttribute('data-position'), '40');
+    const denseDeleteButtons = await manualPage.locator('.guide-delete').evaluateAll((buttons) =>
+      buttons.map((button) => {
+        const box = button.getBoundingClientRect();
+        const target = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+        return {
+          left: box.left, right: box.right, top: box.top, bottom: box.bottom,
+          hit: button === target || button.contains(target)
+        };
+      }));
+    for (let first = 0; first < denseDeleteButtons.length; first += 1) {
+      for (let second = first + 1; second < denseDeleteButtons.length; second += 1) {
+        const a = denseDeleteButtons[first];
+        const b = denseDeleteButtons[second];
+        const overlaps = a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+        assert.equal(overlaps, false, `dense guide delete buttons ${first + 1} and ${second + 1} overlap`);
+      }
+      assert.equal(denseDeleteButtons[first].hit, true, `dense guide delete button ${first + 1} must be clickable`);
+    }
+    for (const position of [0, 49, 98]) {
+      await manualPage.locator('.guide-delete').nth(position).click();
+      assert.equal(await manualPage.locator('.guide').count(), 98);
+      await manualPage.locator('#undo-button').click();
+      assert.equal(await manualPage.locator('.guide').count(), 99);
+    }
+    await manualPage.setViewportSize({ width: 1000, height: 700 });
+    await manualPage.waitForTimeout(100);
+    const resizedDenseButtons = await manualPage.locator('.guide-delete').evaluateAll((buttons) =>
+      buttons.map((button) => {
+        const box = button.getBoundingClientRect();
+        const target = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+        return button === target || button.contains(target);
+      }));
+    assert.equal(resizedDenseButtons.every(Boolean), true, 'dense guide buttons must remain clickable after resize');
+    assert.deepEqual(errors, []);
+    await manualPage.close();
     await context.close();
 
-    const mobileContext = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, deviceScaleFactor: 1, acceptDownloads: true });
+    const mobileContext = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1, acceptDownloads: true });
     const mobile = await mobileContext.newPage();
     mobile.on('pageerror', (error) => errors.push(error.message));
     await mobile.goto(url);
@@ -538,6 +683,14 @@ async function run() {
     await mobile.locator('#sample-button').click();
     await mobile.locator('.result-row').first().waitFor();
     await assertFileActions(mobile, true, 390);
+    assert.equal(await mobile.locator('.guide-delete').count(), await mobile.locator('.guide').count());
+    assert.equal(await mobile.locator('.guide-delete').first().isVisible(), true);
+    const mobileGuidePosition = await mobile.locator('.guide').first().getAttribute('data-position');
+    await mobile.locator('.guide-delete').first().tap();
+    assert.equal(await mobile.locator('.guide').count(), 0);
+    await mobile.locator('#undo-button').tap();
+    assert.equal(await mobile.locator('.guide').count(), 1);
+    assert.equal(await mobile.locator('.guide').first().getAttribute('data-position'), mobileGuidePosition);
     await mobile.waitForTimeout(3800);
     await mobile.screenshot({ path: path.join(imageDir, 'cutimg-mobile-editor.png'), fullPage: true });
     await assertNoHorizontalOverflow(mobile, 390);

@@ -37,9 +37,14 @@
     language: i18n.initialLanguage(storage, navigator.languages || navigator.language)
   };
   const ZOOM_STOPS = [1, 2, 5, 10, 15, 25, 50, 75, 100, 125, 150, 175, 200];
+  const MIN_MANUAL_SLICE_HEIGHT = 40;
+  const MIN_MANUAL_MOVE_HEIGHT = 2;
+  const GUIDE_CONTROL_CLEARANCE = 36;
+  const GUIDE_LANE_STEP = 38;
   let toastTimeout;
   let languageRequestVersion = 0;
   let imageLoadVersion = 0;
+  let guideLayoutFrame = 0;
 
   function tr(key, variables) {
     return i18n.t(state.language, key, variables);
@@ -77,6 +82,7 @@
   }
 
   function setLanguage(language, manual = false) {
+    if (state.dragging) cancelGuideDrag();
     const next = i18n.normalizeLanguage(language);
     const pendingInputs = state.image ? { height: els.height.value, count: els.count.value } : null;
     if (manual) {
@@ -184,7 +190,7 @@
   }
 
   function stepEqualInput(input, basis, delta) {
-    if (!state.image || state.exporting) return;
+    if (!state.image || state.exporting || state.dragging) return;
     const bounds = equalInputBounds(basis);
     const fallback = basis === "height" ? state.targetHeight : state.targetCount;
     const current = Number(input.value);
@@ -210,7 +216,7 @@
   }
 
   function changeZoom(direction) {
-    if (!state.image || state.exporting) return;
+    if (!state.image || state.exporting || state.dragging) return;
     if (direction < 0) {
       state.zoom = [...ZOOM_STOPS].reverse().find((value) => value < state.zoom - 0.01) ?? ZOOM_STOPS[0];
     } else {
@@ -232,14 +238,33 @@
     els.scroll.scrollTo({ top: Math.max(0, imageTop - 25), behavior: "smooth" });
   }
 
-  function createGuide(index, y) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = `guide${state.selectedGuide === index ? " active" : ""}`;
-    button.dataset.guideIndex = String(index);
-    button.style.top = `${y / state.height * 100}%`;
-    button.setAttribute("aria-label", tr("guideAria", { index: index + 1, position: y }));
-    button.title = tr("guideTitle", { index: index + 1, position: y });
+  function cancelGuideDrag(pointerId = null) {
+    if (!state.dragging || (pointerId != null && state.dragging.pointerId !== pointerId)) return;
+    const dragging = state.dragging;
+    state.dragging = null;
+    state.guides = dragging.guides;
+    state.mode = dragging.mode;
+    render();
+  }
+
+  function createGuide(index, y, lane = 0) {
+    const guide = document.createElement("div");
+    guide.className = `guide${state.selectedGuide === index ? " active" : ""}`;
+    guide.dataset.guideIndex = String(index);
+    guide.dataset.position = String(y);
+    guide.style.top = `${y / state.height * 100}%`;
+    guide.style.setProperty("--guide-offset", `${lane * GUIDE_LANE_STEP}px`);
+    const drag = document.createElement("button");
+    drag.type = "button";
+    drag.className = "guide-drag";
+    drag.disabled = state.exporting;
+    const describeDrag = (position) => {
+      drag.setAttribute("aria-label", tr("guideAria", { index: index + 1, position }));
+      drag.title = tr("guideTitle", { index: index + 1, position });
+    };
+    describeDrag(y);
+    const controls = document.createElement("span");
+    controls.className = "guide-controls";
     const label = document.createElement("span");
     label.className = "guide-label";
     label.innerHTML = '<i data-lucide="grip-horizontal"></i>';
@@ -247,62 +272,97 @@
     value.className = "guide-value";
     value.textContent = `${y} px`;
     label.append(value);
-    button.append(label);
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "guide-delete";
+    remove.disabled = state.exporting;
+    remove.title = tr("deleteGuideAt", { index: index + 1, position: y });
+    remove.setAttribute("aria-label", tr("deleteGuideAt", { index: index + 1, position: y }));
+    remove.innerHTML = '<i data-lucide="trash-2"></i>';
+    controls.append(label, remove);
+    guide.append(drag, controls);
 
-    button.addEventListener("pointerdown", (event) => {
-      if (state.exporting || event.button !== 0) return;
+    drag.addEventListener("pointerdown", (event) => {
+      if (state.exporting || state.dragging || event.button !== 0) return;
       event.preventDefault();
-      button.setPointerCapture(event.pointerId);
+      drag.focus({ preventScroll: true });
+      drag.setPointerCapture(event.pointerId);
       state.selectedGuide = index;
       state.selectedSegment = index;
       state.dragging = { index, pointerId: event.pointerId, guides: [...state.guides], mode: state.mode };
-      button.classList.add("active");
+      guide.classList.add("active");
     });
-    button.addEventListener("pointermove", (event) => {
+    drag.addEventListener("pointermove", (event) => {
       if (!state.dragging || state.dragging.pointerId !== event.pointerId) return;
       const yNext = imageYAt(event.clientY);
-      state.guides = core.moveGuide(state.guides, index, yNext, state.height, 40);
+      state.guides = core.moveGuide(state.guides, index, yNext, state.height, MIN_MANUAL_MOVE_HEIGHT);
       state.mode = "manual";
-      button.style.top = `${state.guides[index] / state.height * 100}%`;
+      guide.dataset.position = String(state.guides[index]);
+      guide.style.top = `${state.guides[index] / state.height * 100}%`;
       value.textContent = `${state.guides[index]} px`;
-      button.title = tr("guideTitle", { index: index + 1, position: state.guides[index] });
+      describeDrag(state.guides[index]);
     });
-    button.addEventListener("pointerup", (event) => {
+    drag.addEventListener("pointerup", (event) => {
       if (!state.dragging || state.dragging.pointerId !== event.pointerId) return;
       state.dragging = null;
       state.mode = "manual";
       recordChange();
       render();
     });
-    button.addEventListener("pointercancel", (event) => {
-      if (!state.dragging || state.dragging.pointerId !== event.pointerId) return;
-      state.guides = state.dragging.guides;
-      state.mode = state.dragging.mode;
-      state.dragging = null;
-      render();
+    drag.addEventListener("pointercancel", (event) => {
+      cancelGuideDrag(event.pointerId);
     });
-    button.addEventListener("keydown", (event) => {
+    drag.addEventListener("lostpointercapture", (event) => cancelGuideDrag(event.pointerId));
+    drag.addEventListener("keydown", (event) => {
       if (state.exporting) return;
       if (event.key === "Delete" || event.key === "Backspace") {
         event.preventDefault();
-        removeGuide(index);
+        removeGuide(index, "drag");
       } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
         event.preventDefault();
         const delta = (event.key === "ArrowUp" ? -1 : 1) * (event.shiftKey ? 10 : 1);
-        state.guides = core.moveGuide(state.guides, index, state.guides[index] + delta, state.height, 40);
+        state.guides = core.moveGuide(state.guides, index, state.guides[index] + delta, state.height, MIN_MANUAL_MOVE_HEIGHT);
         state.mode = "manual";
         state.selectedGuide = index;
         recordChange();
         render();
-        els.layer.querySelector(`[data-guide-index="${index}"]`)?.focus();
+        els.layer.querySelector(`[data-guide-index="${index}"] .guide-drag`)?.focus();
       }
     });
-    return button;
+    remove.addEventListener("pointerdown", (event) => event.stopPropagation());
+    remove.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      removeGuide(index, "delete");
+    });
+    return guide;
   }
 
-  function renderGuides() {
-    els.layer.replaceChildren(...state.guides.map((y, index) => createGuide(index, y)));
+  function renderGuides(preserveFocus = false) {
+    const activeGuide = preserveFocus ? document.activeElement?.closest?.(".guide") : null;
+    const activeIndex = activeGuide ? Number(activeGuide.dataset.guideIndex) : null;
+    const activeTarget = document.activeElement?.classList?.contains("guide-delete") ? "delete" : "drag";
+    const imageHeight = els.image.getBoundingClientRect().height;
+    const renderedGaps = sections().map((section) => section.height / state.height * imageHeight);
+    const minimumGap = renderedGaps.length > 0 ? Math.min(...renderedGaps) : GUIDE_CONTROL_CLEARANCE;
+    const laneCount = state.guides.length > 0 && imageHeight > 0
+      ? Math.min(state.guides.length, Math.max(1, Math.ceil(GUIDE_CONTROL_CLEARANCE / minimumGap)))
+      : 1;
+    els.layer.classList.toggle("dense-guides", laneCount > 1);
+    els.layer.dataset.guideLanes = String(laneCount);
+    els.layer.replaceChildren(...state.guides.map((y, index) => createGuide(index, y, index % laneCount)));
     refreshIcons();
+    if (Number.isInteger(activeIndex)) {
+      els.layer.querySelector(`[data-guide-index="${activeIndex}"] .guide-${activeTarget}`)?.focus({ preventScroll: true });
+    }
+  }
+
+  function scheduleGuideLayout() {
+    if (!state.image || state.dragging || guideLayoutFrame) return;
+    guideLayoutFrame = requestAnimationFrame(() => {
+      guideLayoutFrame = 0;
+      if (state.image && !state.dragging) renderGuides(true);
+    });
   }
 
   function createResultRow(section, index) {
@@ -417,7 +477,9 @@
     els.zoomOut.disabled = !ready || state.zoom <= ZOOM_STOPS[0];
     els.zoomIn.disabled = !ready || state.zoom >= ZOOM_STOPS.at(-1);
     els.apply.disabled = !ready || state.exporting;
-    els.addLine.disabled = !ready || state.exporting || state.guides.length >= 99;
+    const manualSliceCapacity = ready ? Math.floor(state.height / MIN_MANUAL_SLICE_HEIGHT) : 0;
+    els.addLine.disabled = !ready || state.exporting || state.guides.length >= 99 ||
+      state.guides.length + 2 > manualSliceCapacity;
     els.clearLines.disabled = !ready || state.exporting || state.guides.length === 0;
     els.downloadAll.disabled = !ready || state.exporting;
     els.topExport.disabled = !ready || state.exporting;
@@ -447,6 +509,7 @@
     if (image.naturalHeight < 3) throw new Error(tr("imageTooShort"));
     if (image.naturalWidth * image.naturalHeight > 180_000_000) throw new Error(tr("imageTooLarge"));
     if (requestVersion !== imageLoadVersion) return false;
+    if (state.dragging) cancelGuideDrag();
     const oldUrl = state.objectUrl;
     state.image = image;
     state.objectUrl = objectUrl;
@@ -484,7 +547,7 @@
   }
 
   function removeImage() {
-    if (!state.image || state.exporting) return;
+    if (!state.image || state.exporting || state.dragging) return;
     imageLoadVersion += 1;
     if (state.objectUrl) URL.revokeObjectURL(state.objectUrl);
     state.image = null;
@@ -516,7 +579,7 @@
   }
 
   async function loadFile(file) {
-    if (!file || state.exporting) return;
+    if (!file || state.exporting || state.dragging) return;
     const requestVersion = ++imageLoadVersion;
     if (!/^(image\/png|image\/jpeg|image\/webp)$/.test(file.type) && !/\.(png|jpe?g|webp)$/i.test(file.name)) {
       notify(tr("invalidFileType"), true);
@@ -544,7 +607,7 @@
   }
 
   async function loadSample() {
-    if (state.exporting) return;
+    if (state.exporting || state.dragging) return;
     const requestVersion = ++imageLoadVersion;
     const image = new Image();
     image.src = "assets/demo-long.png";
@@ -558,7 +621,7 @@
   }
 
   function applyEqual() {
-    if (!state.image || state.exporting) return;
+    if (!state.image || state.exporting || state.dragging) return;
     const source = state.basis === "height" ? els.height : els.count;
     const value = Number(source.value);
     const bounds = equalInputBounds(state.basis);
@@ -586,22 +649,22 @@
   }
 
   function switchMode(mode) {
-    if (state.exporting || state.mode === mode) return;
+    if (state.exporting || state.dragging || state.mode === mode) return;
     state.mode = mode;
     recordChange();
     render();
   }
 
   function switchBasis(basis) {
-    if (state.exporting || state.basis === basis) return;
+    if (state.exporting || state.dragging || state.basis === basis) return;
     state.basis = basis;
     recordChange();
     render();
   }
 
   function addGuideAt(y) {
-    if (!state.image || state.exporting || state.guides.length >= 99) return;
-    const next = core.addGuide(state.guides, y, state.height, 40);
+    if (!state.image || state.exporting || state.dragging || state.guides.length >= 99) return;
+    const next = core.addGuide(state.guides, y, state.height, MIN_MANUAL_SLICE_HEIGHT);
     if (next.length === state.guides.length) {
       notify(tr("guideTooClose"), true);
       return;
@@ -614,14 +677,48 @@
     render();
   }
 
-  function removeGuide(index) {
-    if (!state.image || state.exporting || index == null) return;
-    state.guides.splice(index, 1);
-    state.selectedGuide = null;
-    state.selectedSegment = Math.min(index, state.guides.length);
+  function addDistributedGuide() {
+    if (!state.image || state.exporting || state.dragging || state.guides.length >= 99) return;
+    const sliceCount = state.guides.length + 2;
+    if (Math.floor(state.height / sliceCount) < MIN_MANUAL_SLICE_HEIGHT) {
+      notify(tr("guideTooClose"), true);
+      return;
+    }
+    const next = core.equalCuts(state.height, "count", sliceCount);
+    if (next.length !== state.guides.length + 1) {
+      notify(tr("guideTooClose"), true);
+      return;
+    }
+    state.guides = next;
+    state.selectedGuide = next.length - 1;
+    state.selectedSegment = state.selectedGuide;
     state.mode = "manual";
     recordChange();
     render();
+    requestAnimationFrame(() => {
+      const imageHeight = els.image.getBoundingClientRect().height;
+      const lineTop = next.at(-1) / state.height * imageHeight;
+      els.scroll.scrollTo({
+        top: Math.max(0, lineTop - els.scroll.clientHeight * 0.7),
+        behavior: "smooth"
+      });
+    });
+  }
+
+  function removeGuide(index, focusTarget = null) {
+    if (!state.image || state.exporting || state.dragging || !Number.isInteger(index) || index < 0 || index >= state.guides.length) return;
+    state.guides.splice(index, 1);
+    const nextIndex = Math.min(index, state.guides.length - 1);
+    state.selectedGuide = nextIndex >= 0 ? nextIndex : null;
+    state.selectedSegment = Math.max(0, Math.min(index, state.guides.length));
+    state.mode = "manual";
+    recordChange();
+    render();
+    if (focusTarget && nextIndex >= 0) {
+      els.layer.querySelector(`[data-guide-index="${nextIndex}"] .guide-${focusTarget}`)?.focus();
+    } else if (focusTarget) {
+      els.addLine.focus();
+    }
   }
 
   function baseName() {
@@ -661,7 +758,7 @@
   }
 
   async function exportPieces(index = null) {
-    if (!state.image || state.exporting) return;
+    if (!state.image || state.exporting || state.dragging) return;
     const parts = sections();
     const selected = index == null ? parts.map((part, i) => ({ part, index: i })) : [{ part: parts[index], index }];
     if (selected.some(({ part }) => !part)) return;
@@ -738,15 +835,9 @@
   els.heightIncrement.addEventListener("click", () => stepEqualInput(els.height, "height", 1));
   els.countDecrement.addEventListener("click", () => stepEqualInput(els.count, "count", -1));
   els.countIncrement.addEventListener("click", () => stepEqualInput(els.count, "count", 1));
-  els.addLine.addEventListener("click", () => {
-    if (!state.image) return;
-    const segment = sections()[state.selectedSegment] || sections().sort((a, b) => b.height - a.height)[0];
-    const y = Math.round((segment.start + segment.end) / 2);
-    addGuideAt(y);
-    focusSegment(state.selectedSegment);
-  });
+  els.addLine.addEventListener("click", addDistributedGuide);
   els.clearLines.addEventListener("click", () => {
-    if (!state.image || state.exporting || !state.guides.length) return;
+    if (!state.image || state.exporting || state.dragging || !state.guides.length) return;
     state.guides = [];
     state.selectedGuide = null;
     state.selectedSegment = 0;
@@ -755,38 +846,48 @@
     render();
   });
   els.linePosition.addEventListener("change", () => {
-    if (state.selectedGuide == null || state.exporting) return;
-    state.guides = core.moveGuide(state.guides, state.selectedGuide, Number(els.linePosition.value), state.height, 40);
+    if (state.selectedGuide == null || state.exporting || state.dragging) return;
+    state.guides = core.moveGuide(
+      state.guides,
+      state.selectedGuide,
+      Number(els.linePosition.value),
+      state.height,
+      MIN_MANUAL_MOVE_HEIGHT
+    );
     state.mode = "manual";
     recordChange();
     render();
   });
-  els.deleteLine.addEventListener("click", () => removeGuide(state.selectedGuide));
+  els.deleteLine.addEventListener("click", () => removeGuide(state.selectedGuide, "drag"));
   els.undo.addEventListener("click", () => {
-    if (state.exporting || state.historyIndex <= 0) return;
+    if (state.exporting || state.dragging || state.historyIndex <= 0) return;
     restore(state.history[--state.historyIndex]);
   });
   els.redo.addEventListener("click", () => {
-    if (state.exporting || state.historyIndex >= state.history.length - 1) return;
+    if (state.exporting || state.dragging || state.historyIndex >= state.history.length - 1) return;
     restore(state.history[++state.historyIndex]);
   });
   window.addEventListener("keydown", (event) => {
     if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || state.exporting) return;
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z") {
       event.preventDefault();
-      (event.shiftKey ? els.redo : els.undo).click();
+      if (state.dragging) cancelGuideDrag();
+      else (event.shiftKey ? els.redo : els.undo).click();
     } else if (event.key === "Escape" && state.dragging) {
-      state.guides = state.dragging.guides;
-      state.mode = state.dragging.mode;
-      state.dragging = null;
-      render();
+      cancelGuideDrag();
     }
   });
+  window.addEventListener("blur", () => cancelGuideDrag());
+  window.addEventListener("resize", scheduleGuideLayout);
   els.zoomOut.addEventListener("click", () => changeZoom(-1));
   els.zoomIn.addEventListener("click", () => changeZoom(1));
   els.downloadAll.addEventListener("click", () => exportPieces());
   els.topExport.addEventListener("click", () => exportPieces());
   els.cancelExport.addEventListener("click", () => { state.exportCancelled = true; els.progressLabel.textContent = tr("cancelling"); });
+
+  if (typeof ResizeObserver === "function") {
+    new ResizeObserver(scheduleGuideLayout).observe(els.image);
+  }
 
   translateStaticUi();
   render();
