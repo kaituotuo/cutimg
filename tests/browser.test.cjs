@@ -39,6 +39,28 @@ async function run() {
     await page.locator('#mode-equal').click();
     assert.equal(await page.locator('#mode-equal').getAttribute('aria-pressed'), 'true');
     assert.equal(await page.locator('#equal-controls').isVisible(), true);
+    const heightInput = page.locator('#height-input');
+    const countInput = page.locator('#count-input');
+    assert.equal(await heightInput.inputValue(), '');
+    assert.equal(await heightInput.getAttribute('placeholder'), '上传图片后可设置');
+    assert.equal(await heightInput.isDisabled(), true);
+    assert.equal(await heightInput.getAttribute('aria-invalid'), 'false');
+    assert.equal(await heightInput.getAttribute('aria-describedby'), 'equal-empty-hint');
+    assert.equal(await heightInput.getAttribute('min'), null);
+    assert.equal(await heightInput.getAttribute('max'), null);
+    assert.equal(await page.locator('#height-decrement').isDisabled(), true);
+    assert.equal(await page.locator('#height-increment').isDisabled(), true);
+    await page.locator('#basis-count').click();
+    assert.equal(await countInput.inputValue(), '');
+    assert.equal(await countInput.getAttribute('placeholder'), '上传图片后可设置');
+    assert.equal(await countInput.isDisabled(), true);
+    assert.equal(await countInput.getAttribute('aria-invalid'), 'false');
+    assert.equal(await countInput.getAttribute('aria-describedby'), 'equal-empty-hint');
+    assert.equal(await countInput.getAttribute('min'), null);
+    assert.equal(await countInput.getAttribute('max'), null);
+    assert.equal(await page.locator('#count-decrement').isDisabled(), true);
+    assert.equal(await page.locator('#count-increment').isDisabled(), true);
+    await page.locator('#basis-height').click();
     await page.screenshot({ path: path.join(imageDir, 'cutimg-desktop-empty.png') });
 
     await page.locator('#file-input').setInputFiles(source);
@@ -56,8 +78,10 @@ async function run() {
     assert.equal(await page.locator('#download-all').isEnabled(), true);
     assert.match(await page.locator('#file-meta').textContent(), new RegExp(`${sourceWidth} × ${sourceHeight}`));
 
-    const heightInput = page.locator('#height-input');
-    const countInput = page.locator('#count-input');
+    assert.equal(await heightInput.inputValue(), String(Math.ceil(sourceHeight / 2)));
+    assert.equal(await countInput.inputValue(), '2');
+    assert.equal(await heightInput.getAttribute('aria-describedby'), null);
+    assert.equal(await countInput.getAttribute('aria-describedby'), null);
     assert.equal(await heightInput.getAttribute('min'), '2');
     assert.equal(await heightInput.getAttribute('max'), String(sourceHeight - 1));
     assert.equal(await countInput.getAttribute('min'), '2');

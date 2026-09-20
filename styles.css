@@ -22,6 +22,7 @@ button { cursor: pointer; }
 button:disabled { cursor: not-allowed; }
 button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 3px solid #87b5ff; outline-offset: 2px; }
 [hidden] { display: none !important; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .lucide { width: 18px; height: 18px; stroke-width: 2; flex: none; }
 
 .topbar {
@@ -149,6 +150,9 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 3
 .number-field input::-webkit-inner-spin-button { appearance: none; }
 .number-stepper { display: grid; grid-template-columns: 28px minmax(48px, 1fr) 28px; min-width: 0; flex: 1; overflow: hidden; border: 1px solid #cad5df; border-radius: 4px; background: #f4f7fa; }
 .number-stepper input { height: 30px; padding: 0 4px; text-align: center; border-right: 1px solid #d8e0e8; border-left: 1px solid #d8e0e8; }
+.number-stepper input::placeholder { color: #7d8a98; font-size: 11px; font-weight: 500; opacity: 1; }
+.number-stepper input:disabled { color: #7d8a98; background: #fbfcfd; opacity: 1; }
+.number-stepper input:disabled::placeholder { color: #7d8a98; -webkit-text-fill-color: #7d8a98; opacity: 1; }
 .number-stepper input[aria-invalid="true"] { color: #a63c34; background: #fff6f4; }
 .stepper-button { display: grid; place-items: center; width: 28px; height: 30px; padding: 0; border: 0; color: #44596d; background: #f4f7fa; }
 .stepper-button:hover:not(:disabled) { color: var(--blue); background: #e9f1fd; }

@@ -112,21 +112,22 @@
             <button id="basis-height" type="button" class="basis-tab active" aria-pressed="true">按目标高度</button>
             <button id="basis-count" type="button" class="basis-tab" aria-pressed="false">按张数</button>
           </div>
+          <span class="sr-only" id="equal-empty-hint">上传图片后可设置。</span>
           <div class="number-field" id="height-field">
             <label for="height-input">每张约</label>
             <div class="number-stepper" role="group" aria-label="目标高度">
-              <button class="stepper-button" id="height-decrement" type="button" aria-label="目标高度减 1 像素" title="减 1 像素"><i data-lucide="minus"></i></button>
-              <input id="height-input" type="number" min="2" step="1" value="2000" inputmode="numeric" aria-label="目标高度，单位像素">
-              <button class="stepper-button" id="height-increment" type="button" aria-label="目标高度加 1 像素" title="加 1 像素"><i data-lucide="plus"></i></button>
+              <button class="stepper-button" id="height-decrement" type="button" aria-label="目标高度减 1 像素" title="减 1 像素" disabled><i data-lucide="minus"></i></button>
+              <input id="height-input" type="number" step="1" placeholder="上传图片后可设置" inputmode="numeric" aria-label="目标高度，单位像素" aria-describedby="equal-empty-hint" disabled>
+              <button class="stepper-button" id="height-increment" type="button" aria-label="目标高度加 1 像素" title="加 1 像素" disabled><i data-lucide="plus"></i></button>
             </div>
             <span class="field-unit">px</span>
           </div>
           <div class="number-field" id="count-field" hidden>
             <label for="count-input">分成</label>
             <div class="number-stepper" role="group" aria-label="切片张数">
-              <button class="stepper-button" id="count-decrement" type="button" aria-label="切片张数减 1" title="减 1 张"><i data-lucide="minus"></i></button>
-              <input id="count-input" type="number" min="2" max="100" step="1" value="15" inputmode="numeric" aria-label="切片张数">
-              <button class="stepper-button" id="count-increment" type="button" aria-label="切片张数加 1" title="加 1 张"><i data-lucide="plus"></i></button>
+              <button class="stepper-button" id="count-decrement" type="button" aria-label="切片张数减 1" title="减 1 张" disabled><i data-lucide="minus"></i></button>
+              <input id="count-input" type="number" step="1" placeholder="上传图片后可设置" inputmode="numeric" aria-label="切片张数" aria-describedby="equal-empty-hint" disabled>
+              <button class="stepper-button" id="count-increment" type="button" aria-label="切片张数加 1" title="加 1 张" disabled><i data-lucide="plus"></i></button>
             </div>
             <span class="field-unit">张</span>
           </div>

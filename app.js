@@ -86,6 +86,16 @@
       { input: els.count, decrement: els.countDecrement, increment: els.countIncrement, basis: "count" }
     ];
     for (const control of controls) {
+      if (!state.image) {
+        control.input.removeAttribute("min");
+        control.input.removeAttribute("max");
+        control.input.disabled = true;
+        control.input.setAttribute("aria-invalid", "false");
+        control.input.setAttribute("aria-describedby", "equal-empty-hint");
+        control.decrement.disabled = true;
+        control.increment.disabled = true;
+        continue;
+      }
       const bounds = equalInputBounds(control.basis);
       const value = Number(control.input.value);
       const hasValue = control.input.value.trim() !== "";
@@ -93,6 +103,7 @@
       control.input.min = String(bounds.min);
       control.input.max = String(bounds.max);
       control.input.disabled = disabled;
+      control.input.removeAttribute("aria-describedby");
       control.input.setAttribute("aria-invalid", String(hasValue && !valid));
       control.decrement.disabled = disabled || (Number.isFinite(value) && value <= bounds.min);
       control.increment.disabled = disabled || (Number.isFinite(value) && value >= bounds.max);
@@ -291,8 +302,8 @@
     els.countBasis.setAttribute("aria-pressed", String(state.basis === "count"));
     els.heightField.hidden = state.basis !== "height";
     els.countField.hidden = state.basis !== "count";
-    els.height.value = String(state.targetHeight);
-    els.count.value = String(state.targetCount);
+    els.height.value = ready ? String(state.targetHeight) : "";
+    els.count.value = ready ? String(state.targetCount) : "";
     els.selectedLine.hidden = !ready || state.selectedGuide == null || state.mode !== "manual";
     if (!els.selectedLine.hidden) els.linePosition.value = String(state.guides[state.selectedGuide]);
 
