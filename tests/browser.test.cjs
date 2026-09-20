@@ -256,7 +256,7 @@ async function run() {
     assert.match(await page.locator('html').getAttribute('lang'), /^zh/);
     assert.equal(await page.title(), 'cutimg · 长图分割');
     assert.equal(await page.locator('.product-name').textContent(), '长图分割');
-    assert.equal(await page.locator('#empty-state h1').textContent(), '上传长图，开始分割');
+    assert.equal(await page.locator('#empty-state h1').textContent(), '打开长图，开始分割');
     assert.equal((await page.locator('#language-toggle').innerText()).trim(), '中');
     assert.equal(await page.locator('#language-toggle').getAttribute('aria-label'), '切换到英文');
     assert.equal(await page.locator('.brand-mark svg').count(), 1);
