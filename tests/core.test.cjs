@@ -3,6 +3,7 @@
 const assert = require('node:assert/strict');
 const { Buffer } = require('node:buffer');
 const core = require('../core.js');
+const runI18nTests = require('./i18n.test.cjs');
 
 function assertPartition(total, guides) {
   const pieces = core.segments(total, guides);
@@ -76,6 +77,8 @@ async function unzipStored(blob) {
 }
 
 async function run() {
+  await runI18nTests();
+
   assert.deepEqual(core.equalCuts(30000, 'height', 2000), [
     2000, 4000, 6000, 8000, 10000, 12000, 14000,
     16000, 18000, 20000, 22000, 24000, 26000, 28000

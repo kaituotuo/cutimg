@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#ffffff">
-  <meta name="description" content="cutimg：在浏览器中添加、拖动分割线，将长图切成小图并打包下载。">
-  <title>cutimg · 长图分割</title>
+  <meta name="description" content="cutimg：在浏览器中添加、拖动分割线，将长图切成小图并打包下载。" data-i18n-content="metaDescription">
+  <title data-i18n="documentTitle">cutimg · 长图分割</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -29,35 +29,39 @@
         </span>
       </div>
       <span class="brand-divider"></span>
-      <span class="product-name">长图分割</span>
+      <span class="product-name" data-i18n="productName">长图分割</span>
     </div>
     <div class="top-actions">
-      <span class="privacy-badge" title="图片仅在当前浏览器处理，不上传服务器"><i data-lucide="shield-check"></i><span>本地处理</span></span>
-      <button class="btn btn-quiet" id="replace-button" type="button" hidden><i data-lucide="image-up"></i><span>更换图片</span></button>
-      <button class="btn btn-primary top-export" id="top-export" type="button" title="下载全部 ZIP" aria-label="下载全部 ZIP" disabled><i data-lucide="download"></i><span>下载全部</span></button>
+      <span class="privacy-badge" title="图片文件仅在当前浏览器处理，不上传服务器" data-i18n-title="privacyTitle"><i data-lucide="shield-check"></i><span data-i18n="localProcessing">本地处理</span></span>
+      <button class="language-toggle" id="language-toggle" type="button" title="切换到英文" aria-label="切换到英文" data-i18n-title="switchToEnglish" data-i18n-aria-label="switchToEnglish">
+        <span class="language-option" data-language="zh" lang="zh-CN">中</span><span class="language-option" data-language="en" lang="en">EN</span>
+      </button>
+      <button class="icon-btn top-remove" id="remove-button" type="button" title="删除当前图片" aria-label="删除当前图片" data-i18n-title="removeImage" data-i18n-aria-label="removeImage" hidden><i data-lucide="trash-2"></i></button>
+      <button class="btn btn-quiet top-replace" id="replace-button" type="button" title="重新上传" aria-label="重新上传" data-i18n-title="reuploadImage" data-i18n-aria-label="reuploadImage" hidden><i data-lucide="image-up"></i><span data-i18n="reuploadImage">重新上传</span></button>
+      <button class="btn btn-primary top-export" id="top-export" type="button" title="下载全部 ZIP" aria-label="下载全部 ZIP" data-i18n-title="downloadAllTitle" data-i18n-aria-label="downloadAllTitle" disabled><i data-lucide="download"></i><span data-i18n="downloadAll">下载全部</span></button>
     </div>
   </header>
 
   <main class="app-shell">
-    <section class="work-column" aria-label="图片分割画布">
+    <section class="work-column" aria-label="图片分割画布" data-i18n-aria-label="workAreaLabel">
       <div class="work-toolbar">
         <div class="file-heading">
           <div class="file-icon" aria-hidden="true"><i data-lucide="image"></i></div>
           <div class="file-heading-text">
-            <strong id="file-title">新建分割</strong>
-            <small id="file-meta">上传长图开始</small>
+            <strong id="file-title" data-i18n="newSplit">新建分割</strong>
+            <small id="file-meta" data-i18n="uploadToBegin">上传长图开始</small>
           </div>
         </div>
         <div class="toolbar-tools">
-          <div class="tool-pair" role="group" aria-label="编辑历史">
-            <button type="button" class="icon-btn" id="undo-button" title="撤销" aria-label="撤销" disabled><i data-lucide="undo-2"></i></button>
-            <button type="button" class="icon-btn" id="redo-button" title="重做" aria-label="重做" disabled><i data-lucide="redo-2"></i></button>
+          <div class="tool-pair" role="group" aria-label="编辑历史" data-i18n-aria-label="editHistory">
+            <button type="button" class="icon-btn" id="undo-button" title="撤销" aria-label="撤销" data-i18n-title="undo" data-i18n-aria-label="undo" disabled><i data-lucide="undo-2"></i></button>
+            <button type="button" class="icon-btn" id="redo-button" title="重做" aria-label="重做" data-i18n-title="redo" data-i18n-aria-label="redo" disabled><i data-lucide="redo-2"></i></button>
           </div>
           <span class="toolbar-separator"></span>
-          <div class="zoom-tools" role="group" aria-label="预览缩放">
-            <button type="button" class="icon-btn" id="zoom-out" title="缩小预览" aria-label="缩小预览" disabled><i data-lucide="minus"></i></button>
+          <div class="zoom-tools" role="group" aria-label="预览缩放" data-i18n-aria-label="previewZoom">
+            <button type="button" class="icon-btn" id="zoom-out" title="缩小预览" aria-label="缩小预览" data-i18n-title="zoomOut" data-i18n-aria-label="zoomOut" disabled><i data-lucide="minus"></i></button>
             <span id="zoom-label" class="zoom-label">100%</span>
-            <button type="button" class="icon-btn" id="zoom-in" title="放大预览" aria-label="放大预览" disabled><i data-lucide="plus"></i></button>
+            <button type="button" class="icon-btn" id="zoom-in" title="放大预览" aria-label="放大预览" data-i18n-title="zoomIn" data-i18n-aria-label="zoomIn" disabled><i data-lucide="plus"></i></button>
           </div>
         </div>
       </div>
@@ -72,94 +76,94 @@
               <div class="sample-piece sample-piece-three"></div>
               <span class="sample-scissors"><i data-lucide="scissors"></i></span>
             </div>
-            <h1>上传长图，开始分割</h1>
-            <p>拖放图片到这里，或从电脑选择</p>
-            <button class="btn btn-primary upload-cta" id="upload-button" type="button"><i data-lucide="upload"></i><span>选择图片</span></button>
-            <span class="file-allow">支持 PNG、JPG、WebP · 单张不超过 100 MB</span>
+            <h1 data-i18n="uploadHeading">上传长图，开始分割</h1>
+            <p data-i18n="uploadInstructions">拖放图片到这里，或从电脑选择</p>
+            <button class="btn btn-primary upload-cta" id="upload-button" type="button"><i data-lucide="upload"></i><span data-i18n="chooseImage">选择图片</span></button>
+            <span class="file-allow" data-i18n="fileSupport">支持 PNG、JPG、WebP · 单张不超过 100 MB</span>
           </div>
-          <button class="sample-button" id="sample-button" type="button"><i data-lucide="play"></i><span>试用示例长图</span><i data-lucide="arrow-up-right"></i></button>
+          <button class="sample-button" id="sample-button" type="button"><i data-lucide="play"></i><span data-i18n="trySample">试用示例长图</span><i data-lucide="arrow-up-right"></i></button>
         </div>
 
         <div class="canvas-scroll" id="canvas-scroll" hidden>
           <div class="preview-art" id="preview-art">
-            <img class="preview-image" id="preview-image" alt="待分割的长图" draggable="false">
+            <img class="preview-image" id="preview-image" alt="待分割的长图" data-i18n-alt="previewAlt" draggable="false">
             <div class="line-layer" id="line-layer"></div>
           </div>
         </div>
-        <div class="canvas-watermark" id="canvas-watermark" hidden>cutimg <span>·</span> 分割预览</div>
+        <div class="canvas-watermark" id="canvas-watermark" hidden>cutimg <span>·</span> <span data-i18n="splitPreview">分割预览</span></div>
       </div>
 
       <div class="statusbar">
-        <span id="status-image"><span class="status-dot"></span>等待图片</span>
+        <span id="status-image"><span class="status-dot"></span><span data-i18n="waitingForImage">等待图片</span></span>
         <span id="status-lines">0 条分割线</span>
       </div>
     </section>
 
-    <aside class="side-panel" aria-label="分割设置与导出">
+    <aside class="side-panel" aria-label="分割设置与导出" data-i18n-aria-label="sidePanelLabel">
       <div class="panel-heading">
-        <div><span class="panel-kicker">CUTIMG / EDITOR</span><h2>分割设置</h2></div>
+        <div><span class="panel-kicker">CUTIMG / EDITOR</span><h2 data-i18n="splitSettings">分割设置</h2></div>
         <span class="panel-count" id="panel-count">00</span>
       </div>
       <div class="control-stack">
-        <div class="segmented" role="group" aria-label="分割方式">
-          <button id="mode-equal" type="button" class="segment-tab active" aria-pressed="true"><i data-lucide="rows-3"></i><span>等高分割</span></button>
-          <button id="mode-manual" type="button" class="segment-tab" aria-pressed="false"><i data-lucide="move-horizontal"></i><span>手动分割</span></button>
+        <div class="segmented" role="group" aria-label="分割方式" data-i18n-aria-label="splitMode">
+          <button id="mode-equal" type="button" class="segment-tab active" aria-pressed="true"><i data-lucide="rows-3"></i><span data-i18n="equalSplit">等高分割</span></button>
+          <button id="mode-manual" type="button" class="segment-tab" aria-pressed="false"><i data-lucide="move-horizontal"></i><span data-i18n="manualSplit">手动分割</span></button>
         </div>
 
         <div id="equal-controls" class="mode-controls">
-          <div class="field-label">分割依据</div>
-          <div class="basis-tabs" role="group" aria-label="等高分割依据">
-            <button id="basis-height" type="button" class="basis-tab active" aria-pressed="true">按目标高度</button>
-            <button id="basis-count" type="button" class="basis-tab" aria-pressed="false">按张数</button>
+          <div class="field-label" data-i18n="splitBy">分割依据</div>
+          <div class="basis-tabs" role="group" aria-label="等高分割依据" data-i18n-aria-label="equalBasis">
+            <button id="basis-height" type="button" class="basis-tab active" aria-pressed="true" data-i18n="byHeight">按目标高度</button>
+            <button id="basis-count" type="button" class="basis-tab" aria-pressed="false" data-i18n="byCount">按张数</button>
           </div>
-          <span class="sr-only" id="equal-empty-hint">上传图片后可设置。</span>
+          <span class="sr-only" id="equal-empty-hint" data-i18n="availableAfterUploadSentence">上传图片后可设置。</span>
           <div class="number-field" id="height-field">
-            <label for="height-input">每张约</label>
-            <div class="number-stepper" role="group" aria-label="目标高度">
-              <button class="stepper-button" id="height-decrement" type="button" aria-label="目标高度减 1 像素" title="减 1 像素" disabled><i data-lucide="minus"></i></button>
-              <input id="height-input" type="number" step="1" placeholder="上传图片后可设置" inputmode="numeric" aria-label="目标高度，单位像素" aria-describedby="equal-empty-hint" disabled>
-              <button class="stepper-button" id="height-increment" type="button" aria-label="目标高度加 1 像素" title="加 1 像素" disabled><i data-lucide="plus"></i></button>
+            <label for="height-input" data-i18n="eachSlice">每张约</label>
+            <div class="number-stepper" role="group" aria-label="目标高度" data-i18n-aria-label="targetHeight">
+              <button class="stepper-button" id="height-decrement" type="button" aria-label="目标高度减 1 像素" title="减 1 像素" data-i18n-aria-label="decreaseHeightAria" data-i18n-title="decreaseHeightTitle" disabled><i data-lucide="minus"></i></button>
+              <input id="height-input" type="number" step="1" placeholder="上传图片后可设置" data-i18n-placeholder="availableAfterUpload" inputmode="numeric" aria-label="目标高度，单位像素" data-i18n-aria-label="targetHeightInput" aria-describedby="equal-empty-hint" disabled>
+              <button class="stepper-button" id="height-increment" type="button" aria-label="目标高度加 1 像素" title="加 1 像素" data-i18n-aria-label="increaseHeightAria" data-i18n-title="increaseHeightTitle" disabled><i data-lucide="plus"></i></button>
             </div>
             <span class="field-unit">px</span>
           </div>
           <div class="number-field" id="count-field" hidden>
-            <label for="count-input">分成</label>
-            <div class="number-stepper" role="group" aria-label="切片张数">
-              <button class="stepper-button" id="count-decrement" type="button" aria-label="切片张数减 1" title="减 1 张" disabled><i data-lucide="minus"></i></button>
-              <input id="count-input" type="number" step="1" placeholder="上传图片后可设置" inputmode="numeric" aria-label="切片张数" aria-describedby="equal-empty-hint" disabled>
-              <button class="stepper-button" id="count-increment" type="button" aria-label="切片张数加 1" title="加 1 张" disabled><i data-lucide="plus"></i></button>
+            <label for="count-input" data-i18n="splitInto">分成</label>
+            <div class="number-stepper" role="group" aria-label="切片张数" data-i18n-aria-label="sliceCount">
+              <button class="stepper-button" id="count-decrement" type="button" aria-label="切片张数减 1" title="减 1 张" data-i18n-aria-label="decreaseCountAria" data-i18n-title="decreaseCountTitle" disabled><i data-lucide="minus"></i></button>
+              <input id="count-input" type="number" step="1" placeholder="上传图片后可设置" data-i18n-placeholder="availableAfterUpload" inputmode="numeric" aria-label="切片张数" data-i18n-aria-label="sliceCount" aria-describedby="equal-empty-hint" disabled>
+              <button class="stepper-button" id="count-increment" type="button" aria-label="切片张数加 1" title="加 1 张" data-i18n-aria-label="increaseCountAria" data-i18n-title="increaseCountTitle" disabled><i data-lucide="plus"></i></button>
             </div>
-            <span class="field-unit">张</span>
+            <span class="field-unit" data-i18n="sliceUnit">张</span>
           </div>
-          <button class="btn btn-dark apply-button" id="apply-equal" type="button" disabled><i data-lucide="split"></i><span>应用等高分割</span></button>
+          <button class="btn btn-dark apply-button" id="apply-equal" type="button" disabled><i data-lucide="split"></i><span data-i18n="applyEqual">应用等高分割</span></button>
         </div>
 
         <div id="manual-controls" class="mode-controls" hidden>
           <div class="manual-actions">
-            <button class="btn btn-outline add-line-button" id="add-line" type="button" disabled><i data-lucide="plus"></i><span>添加分割线</span></button>
-            <button class="icon-btn clear-lines-button" id="clear-lines" type="button" title="清空全部分割线" aria-label="清空全部分割线" disabled><i data-lucide="trash-2"></i></button>
+            <button class="btn btn-outline add-line-button" id="add-line" type="button" disabled><i data-lucide="plus"></i><span data-i18n="addGuide">添加分割线</span></button>
+            <button class="icon-btn clear-lines-button" id="clear-lines" type="button" title="清空全部分割线" aria-label="清空全部分割线" data-i18n-title="clearGuides" data-i18n-aria-label="clearGuides" disabled><i data-lucide="trash-2"></i></button>
           </div>
           <div class="selected-line" id="selected-line" hidden>
-            <label class="number-field"><span>分割线位置</span><input id="line-position" type="number" min="1" step="1" inputmode="numeric"><span class="field-unit">px</span></label>
-            <button class="icon-btn danger-icon" id="delete-line" type="button" title="删除所选分割线" aria-label="删除所选分割线"><i data-lucide="trash-2"></i></button>
+            <label class="number-field"><span data-i18n="guidePosition">分割线位置</span><input id="line-position" type="number" min="1" step="1" inputmode="numeric"><span class="field-unit">px</span></label>
+            <button class="icon-btn danger-icon" id="delete-line" type="button" title="删除所选分割线" aria-label="删除所选分割线" data-i18n-title="deleteGuide" data-i18n-aria-label="deleteGuide"><i data-lucide="trash-2"></i></button>
           </div>
         </div>
 
         <div class="result-metrics" aria-live="polite">
-          <div><span>切片数量</span><strong id="slice-total">--</strong></div>
-          <div><span>切片高度</span><strong id="slice-height">--</strong></div>
+          <div><span data-i18n="slicesLabel">切片数量</span><strong id="slice-total">--</strong></div>
+          <div><span data-i18n="sliceHeightLabel">切片高度</span><strong id="slice-height">--</strong></div>
         </div>
       </div>
 
       <div class="results-area">
-        <div class="results-title"><h3>切片预览</h3><span id="results-count">0 张</span></div>
-        <div class="results-list" id="results-list"><div class="results-empty"><i data-lucide="layers-2"></i><span>暂无切片</span></div></div>
+        <div class="results-title"><h3 data-i18n="slicePreview">切片预览</h3><span id="results-count">0 张</span></div>
+        <div class="results-list" id="results-list"><div class="results-empty"><i data-lucide="layers-2"></i><span data-i18n="noSlices">暂无切片</span></div></div>
       </div>
 
       <div class="export-footer">
-        <div class="export-progress" id="export-progress" hidden><div class="progress-track"><span id="progress-fill"></span></div><div class="progress-line"><span id="progress-label">准备导出</span><button id="cancel-export" type="button">取消</button></div></div>
-        <button class="btn btn-primary export-main" id="download-all" type="button" disabled><i data-lucide="download"></i><span>下载全部 ZIP</span></button>
-        <span class="export-meta" id="export-meta">PNG 原图尺寸 · 浏览器本地生成</span>
+        <div class="export-progress" id="export-progress" hidden><div class="progress-track"><span id="progress-fill"></span></div><div class="progress-line"><span id="progress-label" data-i18n="preparingExport">准备导出</span><button id="cancel-export" type="button" data-i18n="cancel">取消</button></div></div>
+        <button class="btn btn-primary export-main" id="download-all" type="button" disabled><i data-lucide="download"></i><span data-i18n="downloadAllZip">下载全部 ZIP</span></button>
+        <span class="export-meta" id="export-meta" data-i18n="exportMeta">PNG 原图尺寸 · 浏览器本地生成</span>
       </div>
     </aside>
   </main>
@@ -168,6 +172,7 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script src="assets/lucide.min.js"></script>
   <script src="core.js"></script>
+  <script src="i18n.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
