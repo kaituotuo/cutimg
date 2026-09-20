@@ -62,8 +62,6 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 3
 .language-toggle:hover { border-color: #9eafc2; background: #f4f7fa; }
 .language-option { min-width: 14px; text-align: center; }
 html[lang^="zh"] .language-option[data-language="en"], html[lang^="en"] .language-option[data-language="zh"] { display: none; }
-.top-remove { width: 38px; height: 38px; border: 1px solid #e3d1cf; color: #a94d43; background: #fff; }
-.top-remove:hover:not(:disabled) { color: #963d33; border-color: #d3a7a2; background: #fff4f2; }
 .btn { justify-content: center; gap: 8px; min-height: 38px; padding: 0 14px; border: 1px solid transparent; border-radius: 6px; font-size: 13px; font-weight: 700; white-space: nowrap; transition: background .15s, border-color .15s, box-shadow .15s; }
 .btn .lucide { width: 17px; height: 17px; }
 .btn-primary { color: white; background: var(--blue); border-color: var(--blue); }
@@ -79,13 +77,17 @@ html[lang^="zh"] .language-option[data-language="en"], html[lang^="en"] .languag
 .app-shell { display: grid; grid-template-columns: minmax(0, 1fr) 342px; height: calc(100svh - var(--header-h)); min-height: 500px; }
 .work-column { display: grid; grid-template-rows: 67px minmax(0, 1fr) 36px; min-width: 0; min-height: 0; }
 .work-toolbar { justify-content: space-between; gap: 18px; padding: 0 26px; border-bottom: 1px solid var(--line); }
-.file-heading { gap: 11px; min-width: 0; }
+.file-heading { flex: 1 1 auto; gap: 11px; min-width: 0; }
 .file-icon { display: grid; place-items: center; width: 34px; height: 34px; flex: none; border: 1px solid #d8e2ec; border-radius: 6px; color: var(--blue); background: #f3f7fd; }
 .file-icon .lucide { width: 17px; height: 17px; }
-.file-heading-text { display: grid; gap: 2px; min-width: 0; }
+.file-heading-text { display: grid; gap: 2px; min-width: 0; max-width: 240px; }
 .file-heading-text strong, .file-heading-text small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .file-heading-text strong { font-size: 13px; font-weight: 700; }
 .file-heading-text small { font-size: 11px; color: var(--muted); }
+.file-actions { display: flex; align-items: center; gap: 6px; flex: none; margin-left: 3px; }
+.file-remove { width: 34px; height: 34px; border: 1px solid #e3d1cf; color: #a94d43; background: #fff; }
+.file-remove:hover:not(:disabled) { color: #963d33; border-color: #d3a7a2; background: #fff4f2; }
+.file-replace { min-height: 34px; padding: 0 11px; }
 .toolbar-tools { gap: 13px; flex: none; }
 .tool-pair, .zoom-tools { gap: 1px; }
 .toolbar-separator { height: 21px; border-left: 1px solid var(--line); }
@@ -195,8 +197,9 @@ html[lang^="zh"] .language-option[data-language="en"], html[lang^="en"] .languag
 .result-row:hover { background: #f5f8fb; }
 .result-row.active { border-color: #bfd4f6; background: var(--blue-pale); }
 .row-select { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; padding: 0; border: 0; text-align: left; background: transparent; }
-.row-thumbnail { position: relative; display: block; width: 52px; height: 54px; flex: none; overflow: hidden; border: 1px solid #d5dde5; border-radius: 3px; background: #f1f4f6; }
-.row-thumbnail img { position: absolute; left: 0; max-width: none; height: auto; }
+.row-thumbnail { display: grid; place-items: center; width: 66px; height: 52px; flex: none; overflow: hidden; border-radius: 3px; background: #f1f4f6; }
+.row-crop { position: relative; display: block; flex: none; overflow: hidden; background: white; outline: 1px solid #d5dde5; }
+.row-crop img { position: absolute; left: 0; max-width: none; height: auto; -webkit-user-drag: none; }
 .row-copy { display: grid; gap: 3px; min-width: 0; }
 .row-copy strong { font-size: 12px; font-weight: 780; color: #2c3a4a; font-variant-numeric: tabular-nums; }
 .row-copy small { overflow: hidden; text-overflow: ellipsis; color: #7b8b9b; font-size: 10px; white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -225,6 +228,13 @@ html[lang^="zh"] .language-option[data-language="en"], html[lang^="en"] .languag
 @media (max-width: 920px) {
   .privacy-badge { display: none; }
   .brand-divider, .product-name { display: none; }
+  .work-toolbar { gap: 10px; }
+  .file-heading { gap: 8px; }
+  .file-icon { display: none; }
+  .file-heading-text { flex: 1 1 auto; max-width: none; }
+  .file-actions { gap: 4px; margin-left: 2px; }
+  .file-replace { width: 34px; min-height: 34px; padding: 0; }
+  .file-replace span { display: none; }
 }
 
 @media (max-width: 760px) {
@@ -246,13 +256,18 @@ html[lang^="zh"] .language-option[data-language="en"], html[lang^="en"] .languag
   .brand-divider, .product-name { display: none; }
   .top-actions { gap: 5px; }
   .top-actions .btn { padding: 0 9px; font-size: 11px; }
-  .top-export span, .top-replace span { display: none; }
-  .top-export, .top-replace { width: 36px; }
+  .top-export span { display: none; }
+  .top-export { width: 36px; }
   .language-toggle { width: 36px; }
-  .work-toolbar { gap: 6px; padding: 0 10px; }
+  .work-column { grid-template-rows: auto minmax(390px, 62svh) 33px; }
+  .work-toolbar { display: grid; grid-template-columns: minmax(0, 1fr); align-content: center; gap: 4px; padding: 6px 10px; }
+  .file-heading { width: 100%; gap: 8px; }
   .file-icon { display: none; }
-  .file-heading-text { max-width: 145px; }
-  .toolbar-tools { gap: 3px; }
+  .file-heading-text { flex: 1 1 auto; max-width: none; }
+  .file-actions { gap: 4px; margin-left: 2px; }
+  .file-replace { width: 34px; min-height: 31px; padding: 0; }
+  .file-replace span { display: none; }
+  .toolbar-tools { gap: 3px; justify-self: end; }
   .zoom-label { min-width: 37px; font-size: 10px; }
   .toolbar-separator { margin: 0 3px; }
   .icon-btn { width: 29px; height: 31px; }
@@ -271,7 +286,8 @@ html[lang^="zh"] .language-option[data-language="en"], html[lang^="en"] .languag
   .brand-block { gap: 0; }
   .top-actions { gap: 4px; }
   .language-toggle { width: 34px; }
-  .top-remove, .top-export, .top-replace { width: 34px; min-height: 34px; }
+  .top-export { width: 34px; min-height: 34px; }
+  .file-remove, .file-replace { width: 31px; min-height: 31px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

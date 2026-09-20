@@ -16,6 +16,14 @@ const equalTargetHeight = 100;
 const equalSliceCount = Math.ceil(sourceHeight / equalTargetHeight);
 const equalGuideCount = equalSliceCount - 1;
 
+function sectionsForGuides(guides) {
+  const boundaries = [0, ...guides, sourceHeight];
+  return boundaries.slice(0, -1).map((start, index) => ({
+    start,
+    height: boundaries[index + 1] - start
+  }));
+}
+
 const contentTypes = {
   '.css': 'text/css; charset=utf-8',
   '.html': 'text/html; charset=utf-8',
@@ -71,6 +79,146 @@ async function assertNoHorizontalOverflow(page, width) {
   assert.ok(overflow <= 1, `${width}px horizontal overflow: ${overflow}px`);
 }
 
+function assertClose(actual, expected, tolerance, message) {
+  assert.ok(Math.abs(actual - expected) <= tolerance,
+    `${message}: expected ${expected} +/- ${tolerance}, got ${actual}`);
+}
+
+async function assertFileActions(page, expectedVisible, viewportWidth) {
+  const state = await page.evaluate(() => {
+    const group = document.getElementById('file-actions');
+    const toolbar = group?.closest('.work-toolbar');
+    const heading = group?.closest('.file-heading');
+    const fileText = heading?.querySelector('.file-heading-text');
+    const groupBox = group?.getBoundingClientRect();
+    const toolbarBox = toolbar?.getBoundingClientRect();
+    const fileTextBox = fileText?.getBoundingClientRect();
+    const visible = Boolean(group && getComputedStyle(group).display !== 'none' && groupBox.width && groupBox.height);
+    return {
+      groupCount: document.querySelectorAll('#file-actions.file-actions').length,
+      removeCount: document.querySelectorAll('#remove-button').length,
+      replaceCount: document.querySelectorAll('#replace-button').length,
+      removeInGroup: Boolean(group?.querySelector(':scope > #remove-button')),
+      replaceInGroup: Boolean(group?.querySelector(':scope > #replace-button')),
+      inHeading: Boolean(heading && heading.querySelector(':scope > #file-actions') === group),
+      inToolbar: Boolean(toolbar),
+      actionsInHeader: document.querySelectorAll('header .top-actions #remove-button, header .top-actions #replace-button').length,
+      hiddenAttribute: Boolean(group?.hidden),
+      visible,
+      fileTextWidth: fileTextBox?.width || 0,
+      withinToolbar: !visible || Boolean(
+        groupBox.left >= toolbarBox.left - 1 && groupBox.right <= toolbarBox.right + 1
+      ),
+      withinViewport: !visible || Boolean(groupBox.left >= -1 && groupBox.right <= window.innerWidth + 1)
+    };
+  });
+
+  assert.equal(state.groupCount, 1, 'file actions must have one stable local group');
+  assert.equal(state.removeCount, 1, 'remove action must occur exactly once');
+  assert.equal(state.replaceCount, 1, 'replace action must occur exactly once');
+  assert.equal(state.removeInGroup, true, 'remove action must be a direct child of .file-actions');
+  assert.equal(state.replaceInGroup, true, 'replace action must be a direct child of .file-actions');
+  assert.equal(state.inHeading, true, '.file-actions must sit beside file information in .file-heading');
+  assert.equal(state.inToolbar, true, '.file-actions must remain inside .work-toolbar');
+  assert.equal(state.actionsInHeader, 0, 'image actions must not be placed in header .top-actions');
+  assert.equal(state.hiddenAttribute, !expectedVisible,
+    `file actions hidden state is wrong at ${viewportWidth}px`);
+  assert.equal(state.visible, expectedVisible,
+    `file actions visibility is wrong at ${viewportWidth}px`);
+  if (expectedVisible) {
+    assert.ok(state.fileTextWidth >= 80,
+      `file information is squeezed to ${state.fileTextWidth}px at ${viewportWidth}px`);
+  }
+  assert.equal(state.withinToolbar, true, `file actions exceed .work-toolbar at ${viewportWidth}px`);
+  assert.equal(state.withinViewport, true, `file actions exceed the ${viewportWidth}px viewport`);
+}
+
+async function assertWysiwygThumbnails(page, expectedSections) {
+  const thumbnails = await page.locator('.result-row').evaluateAll((rows) => rows.map((row) => {
+    const thumbnail = row.querySelector('.row-thumbnail');
+    const crop = thumbnail?.querySelector(':scope > .row-crop');
+    const image = crop?.querySelector(':scope > img');
+    const thumbnailBox = thumbnail?.getBoundingClientRect();
+    const cropBox = crop?.getBoundingClientRect();
+    const imageBox = image?.getBoundingClientRect();
+    const imageStyle = image ? getComputedStyle(image) : null;
+    const cropStyle = crop ? getComputedStyle(crop) : null;
+    return {
+      index: Number(row.dataset.index),
+      thumbnailWidth: thumbnailBox?.width,
+      thumbnailHeight: thumbnailBox?.height,
+      cropCount: thumbnail?.querySelectorAll(':scope > .row-crop').length || 0,
+      start: Number(crop?.dataset.start),
+      height: Number(crop?.dataset.height),
+      scale: Number(crop?.dataset.scale),
+      cropWidth: Number.parseFloat(crop?.style.width || ''),
+      cropHeight: Number.parseFloat(crop?.style.height || ''),
+      imageWidth: Number.parseFloat(image?.style.width || ''),
+      imageTop: Number.parseFloat(image?.style.top || ''),
+      imageComplete: Boolean(image?.complete),
+      imageNaturalWidth: image?.naturalWidth || 0,
+      imageNaturalHeight: image?.naturalHeight || 0,
+      renderedImageWidth: imageBox?.width || 0,
+      renderedImageHeight: imageBox?.height || 0,
+      imageDisplay: imageStyle?.display || '',
+      imageVisibility: imageStyle?.visibility || '',
+      imageOpacity: imageStyle?.opacity || '',
+      overflowX: cropStyle?.overflowX || '',
+      overflowY: cropStyle?.overflowY || '',
+      outlineOffset: cropStyle?.outlineOffset || '',
+      cropInsideThumbnail: Boolean(
+        cropBox && thumbnailBox &&
+        cropBox.left >= thumbnailBox.left - 1 && cropBox.right <= thumbnailBox.right + 1 &&
+        cropBox.top >= thumbnailBox.top - 1 && cropBox.bottom <= thumbnailBox.bottom + 1
+      )
+    };
+  }));
+
+  assert.equal(thumbnails.length, expectedSections.length, 'every section must have one preview row');
+  assert.ok(new Set(expectedSections.map((section) => section.height)).size > 1,
+    'thumbnail regression fixture must include slices with different heights');
+
+  thumbnails.forEach((thumbnail, index) => {
+    const expected = expectedSections[index];
+    const expectedScale = Math.min(64 / sourceWidth, 48 / expected.height);
+    const expectedCropWidth = sourceWidth * expectedScale;
+    const expectedCropHeight = expected.height * expectedScale;
+    const message = `slice ${index + 1}`;
+
+    assert.equal(thumbnail.index, index, `${message} row order must match its section`);
+    assert.equal(thumbnail.cropCount, 1, `${message} must use one real .row-crop viewport`);
+    assertClose(thumbnail.thumbnailWidth, 66, 0.5, `${message} display slot width`);
+    assertClose(thumbnail.thumbnailHeight, 52, 0.5, `${message} display slot height`);
+    assert.equal(thumbnail.start, expected.start, `${message} crop start metadata`);
+    assert.equal(thumbnail.height, expected.height, `${message} crop height metadata`);
+    assertClose(thumbnail.scale, expectedScale, 1e-9, `${message} scale`);
+    assertClose(thumbnail.cropWidth, expectedCropWidth, 0.02, `${message} crop width`);
+    assertClose(thumbnail.cropHeight, expectedCropHeight, 0.02, `${message} crop height`);
+    assertClose(thumbnail.cropWidth / thumbnail.cropHeight, sourceWidth / expected.height, 0.01,
+      `${message} viewport aspect ratio`);
+    assertClose(thumbnail.imageWidth, expectedCropWidth, 0.02, `${message} source image width`);
+    assert.equal(thumbnail.imageComplete, true, `${message} source image must finish decoding`);
+    assert.equal(thumbnail.imageNaturalWidth, sourceWidth, `${message} source natural width`);
+    assert.equal(thumbnail.imageNaturalHeight, sourceHeight, `${message} source natural height`);
+    assertClose(thumbnail.renderedImageWidth, expectedCropWidth, 0.1, `${message} rendered source width`);
+    assertClose(thumbnail.renderedImageHeight, sourceHeight * expectedScale, 0.1,
+      `${message} rendered source height`);
+    assert.notEqual(thumbnail.imageDisplay, 'none', `${message} source image must render`);
+    assert.notEqual(thumbnail.imageVisibility, 'hidden', `${message} source image must be visible`);
+    assert.notEqual(thumbnail.imageOpacity, '0', `${message} source image must not be transparent`);
+    assertClose(thumbnail.imageTop, -expected.start * expectedScale, 0.02,
+      `${message} source image offset`);
+    assertClose(-thumbnail.imageTop / thumbnail.scale, expected.start, 0.02,
+      `${message} visible range start`);
+    assertClose((thumbnail.cropHeight - thumbnail.imageTop) / thumbnail.scale,
+      expected.start + expected.height, 0.02, `${message} visible range end`);
+    assert.equal(thumbnail.overflowX, 'hidden', `${message} must clip horizontal overflow`);
+    assert.equal(thumbnail.overflowY, 'hidden', `${message} must clip vertical overflow`);
+    assert.equal(thumbnail.outlineOffset, '0px', `${message} outline must not cover source pixels`);
+    assert.equal(thumbnail.cropInsideThumbnail, true, `${message} crop must stay inside its display slot`);
+  });
+}
+
 async function assertApplyRejected(page, input, value, expectedGuideCount) {
   await input.fill(String(value));
   await page.locator('#apply-equal').click();
@@ -112,6 +260,7 @@ async function run() {
     assert.equal((await page.locator('#language-toggle').innerText()).trim(), '中');
     assert.equal(await page.locator('#language-toggle').getAttribute('aria-label'), '切换到英文');
     assert.equal(await page.locator('.brand-mark svg').count(), 1);
+    await assertFileActions(page, false, 1440);
     await page.locator('#mode-manual').click();
     assert.equal(await page.locator('#mode-manual').getAttribute('aria-pressed'), 'true');
     assert.equal(await page.locator('#manual-controls').isVisible(), true);
@@ -152,6 +301,7 @@ async function run() {
     await page.locator('#file-input').setInputFiles(source);
     await page.locator('.result-row').first().waitFor({ timeout: 30000 });
     await page.waitForTimeout(150);
+    await assertFileActions(page, true, 1440);
     assert.equal(await page.locator('.guide').count(), 1);
     assert.equal(await page.locator('.result-row').count(), 2);
     assert.equal(await page.locator('#segment-highlight').count(), 0);
@@ -236,11 +386,13 @@ async function run() {
     assert.equal(await page.locator('#remove-button').isHidden(), true);
     assert.equal(await page.locator('#replace-button').isHidden(), true);
     assert.equal(await page.locator('#top-export').isDisabled(), true);
+    await assertFileActions(page, false, 1440);
 
     await page.locator('#file-input').setInputFiles(source);
     await page.locator('.result-row').first().waitFor({ timeout: 30000 });
     assert.equal(await page.locator('#remove-button').isVisible(), true);
     assert.equal(await page.locator('#replace-button').isVisible(), true);
+    await assertFileActions(page, true, 1440);
     assert.equal(await page.locator('.result-row').count(), 2);
     assert.equal(await heightInput.getAttribute('min'), '2');
     assert.equal(await heightInput.getAttribute('max'), String(sourceHeight - 1));
@@ -289,6 +441,27 @@ async function run() {
     await heightInput.fill(String(equalTargetHeight));
     await page.locator('#apply-equal').click();
     assert.equal(await page.locator('.guide').count(), equalGuideCount);
+    const equalBoundaries = Array.from(
+      { length: equalSliceCount + 1 },
+      (_, index) => Math.floor(sourceHeight * index / equalSliceCount)
+    );
+    const equalGuides = equalBoundaries.slice(1, -1);
+    const equalSections = sectionsForGuides(equalGuides);
+    await assertWysiwygThumbnails(page, equalSections);
+
+    await page.locator('.row-select').last().click();
+    await page.locator('#mode-manual').click();
+    await page.locator('#add-line').click();
+    await page.locator('#line-position').fill('1400');
+    await page.locator('#line-position').dispatchEvent('change');
+    assert.equal(await page.locator('.guide').count(), equalGuideCount + 1);
+    await assertWysiwygThumbnails(page, sectionsForGuides([...equalGuides, 1400]));
+    assert.equal(await page.locator('.row-crop').last().getAttribute('data-height'), '43');
+    await page.locator('#mode-equal').click();
+    await heightInput.fill(String(equalTargetHeight));
+    await page.locator('#apply-equal').click();
+    assert.equal(await page.locator('.guide').count(), equalGuideCount);
+    assert.equal(await page.locator('#mode-equal').getAttribute('aria-pressed'), 'true');
 
     await page.waitForTimeout(250);
     await page.screenshot({ path: path.join(imageDir, 'cutimg-desktop-editor.png') });
@@ -360,9 +533,11 @@ async function run() {
     const mobile = await mobileContext.newPage();
     mobile.on('pageerror', (error) => errors.push(error.message));
     await mobile.goto(url);
+    await assertFileActions(mobile, false, 390);
     await mobile.screenshot({ path: path.join(imageDir, 'cutimg-mobile-empty.png') });
     await mobile.locator('#sample-button').click();
     await mobile.locator('.result-row').first().waitFor();
+    await assertFileActions(mobile, true, 390);
     await mobile.waitForTimeout(3800);
     await mobile.screenshot({ path: path.join(imageDir, 'cutimg-mobile-editor.png'), fullPage: true });
     await assertNoHorizontalOverflow(mobile, 390);
@@ -371,10 +546,25 @@ async function run() {
 
     const narrow = await browser.newPage({ viewport: { width: 320, height: 700 } });
     await narrow.goto(url);
+    await assertFileActions(narrow, false, 320);
     await narrow.locator('#sample-button').click();
     await narrow.locator('.result-row').first().waitFor();
+    await assertFileActions(narrow, true, 320);
     await assertNoHorizontalOverflow(narrow, 320);
     await narrow.close();
+
+    for (const width of [800, 761, 520]) {
+      const intermediate = await browser.newPage({ viewport: { width, height: 800 } });
+      await intermediate.goto(url);
+      await intermediate.locator('#sample-button').click();
+      await intermediate.locator('.result-row').first().waitFor();
+      await assertFileActions(intermediate, true, width);
+      await assertNoHorizontalOverflow(intermediate, width);
+      if (width === 761) {
+        await intermediate.screenshot({ path: path.join(imageDir, 'cutimg-tablet-editor.png') });
+      }
+      await intermediate.close();
+    }
 
     country.code = 'CN';
     country.delay = 0;

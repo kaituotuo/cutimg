@@ -36,8 +36,6 @@
       <button class="language-toggle" id="language-toggle" type="button" title="切换到英文" aria-label="切换到英文" data-i18n-title="switchToEnglish" data-i18n-aria-label="switchToEnglish">
         <span class="language-option" data-language="zh" lang="zh-CN">中</span><span class="language-option" data-language="en" lang="en">EN</span>
       </button>
-      <button class="icon-btn top-remove" id="remove-button" type="button" title="删除当前图片" aria-label="删除当前图片" data-i18n-title="removeImage" data-i18n-aria-label="removeImage" hidden><i data-lucide="trash-2"></i></button>
-      <button class="btn btn-quiet top-replace" id="replace-button" type="button" title="重新上传" aria-label="重新上传" data-i18n-title="reuploadImage" data-i18n-aria-label="reuploadImage" hidden><i data-lucide="image-up"></i><span data-i18n="reuploadImage">重新上传</span></button>
       <button class="btn btn-primary top-export" id="top-export" type="button" title="下载全部 ZIP" aria-label="下载全部 ZIP" data-i18n-title="downloadAllTitle" data-i18n-aria-label="downloadAllTitle" disabled><i data-lucide="download"></i><span data-i18n="downloadAll">下载全部</span></button>
     </div>
   </header>
@@ -50,6 +48,10 @@
           <div class="file-heading-text">
             <strong id="file-title" data-i18n="newSplit">新建分割</strong>
             <small id="file-meta" data-i18n="uploadToBegin">上传长图开始</small>
+          </div>
+          <div class="file-actions" id="file-actions" role="group" aria-label="图片操作" data-i18n-aria-label="imageActions" hidden>
+            <button class="icon-btn file-remove" id="remove-button" type="button" title="删除当前图片" aria-label="删除当前图片" data-i18n-title="removeImage" data-i18n-aria-label="removeImage"><i data-lucide="trash-2"></i></button>
+            <button class="btn btn-quiet file-replace" id="replace-button" type="button" title="重新上传" aria-label="重新上传" data-i18n-title="reuploadImage" data-i18n-aria-label="reuploadImage"><i data-lucide="image-up"></i><span data-i18n="reuploadImage">重新上传</span></button>
           </div>
         </div>
         <div class="toolbar-tools">

@@ -9,7 +9,7 @@
   const $ = (id) => document.getElementById(id);
   const els = {
     fileInput: $("file-input"), replace: $("replace-button"), remove: $("remove-button"),
-    languageToggle: $("language-toggle"), upload: $("upload-button"),
+    fileActions: $("file-actions"), languageToggle: $("language-toggle"), upload: $("upload-button"),
     dropTarget: $("drop-target"), sample: $("sample-button"), canvasShell: $("canvas-shell"),
     empty: $("empty-state"), scroll: $("canvas-scroll"), previewArt: $("preview-art"),
     image: $("preview-image"), layer: $("line-layer"),
@@ -316,12 +316,24 @@
     select.setAttribute("aria-pressed", String(index === state.selectedSegment));
     const thumb = document.createElement("span");
     thumb.className = "row-thumbnail";
+    const crop = document.createElement("span");
+    crop.className = "row-crop";
+    const scale = Math.min(64 / state.width, 48 / section.height);
+    const cropWidth = state.width * scale;
+    const cropHeight = section.height * scale;
+    crop.style.width = `${cropWidth}px`;
+    crop.style.height = `${cropHeight}px`;
+    crop.dataset.start = String(section.start);
+    crop.dataset.height = String(section.height);
+    crop.dataset.scale = String(scale);
     const image = document.createElement("img");
     image.alt = "";
     image.src = state.image.src;
-    image.style.width = "52px";
-    image.style.top = `${27 - ((section.start + section.height / 2) * 52 / state.width)}px`;
-    thumb.append(image);
+    image.draggable = false;
+    image.style.width = `${cropWidth}px`;
+    image.style.top = `${-section.start * scale}px`;
+    crop.append(image);
+    thumb.append(crop);
     const copy = document.createElement("span");
     copy.className = "row-copy";
     const title = document.createElement("strong");
@@ -368,8 +380,7 @@
     els.empty.hidden = ready;
     els.scroll.hidden = !ready;
     els.watermark.hidden = !ready;
-    els.replace.hidden = !ready;
-    if (els.remove) els.remove.hidden = !ready;
+    els.fileActions.hidden = !ready;
     els.equal.classList.toggle("active", state.mode === "equal");
     els.manual.classList.toggle("active", state.mode === "manual");
     els.equal.setAttribute("aria-pressed", String(state.mode === "equal"));
