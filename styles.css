@@ -10,6 +10,7 @@
   --coral: #df644f;
   --white: #fff;
   --header-h: 66px;
+  --editor-head-h: 60px;
   font-family: Inter, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
   font-synthesis: none;
 }
@@ -75,7 +76,7 @@ html[lang^="zh"] .language-option[data-language="en"], html[lang^="en"] .languag
 .btn-outline { background: white; color: #334354; border-color: #cbd5e0; }
 
 .app-shell { display: grid; grid-template-columns: minmax(0, 1fr) 342px; height: calc(100svh - var(--header-h)); min-height: 500px; }
-.work-column { display: grid; grid-template-rows: 67px minmax(0, 1fr) 36px; min-width: 0; min-height: 0; }
+.work-column { display: grid; grid-template-rows: var(--editor-head-h) minmax(0, 1fr) 36px; min-width: 0; min-height: 0; }
 .work-toolbar { justify-content: space-between; gap: 18px; padding: 0 26px; border-bottom: 1px solid var(--line); }
 .file-heading { flex: 1 1 auto; gap: 11px; min-width: 0; }
 .file-icon { display: grid; place-items: center; width: 34px; height: 34px; flex: none; border: 1px solid #d8e2ec; border-radius: 6px; color: var(--blue); background: #f3f7fd; }
@@ -146,7 +147,7 @@ html[lang^="zh"] .language-option[data-language="en"], html[lang^="en"] .languag
 .has-image .status-dot { background: #4aab84; }
 
 .side-panel { display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; min-width: 0; min-height: 0; overflow: hidden; border-left: 1px solid var(--line); background: white; }
-.panel-heading { display: flex; align-items: center; justify-content: space-between; padding: 24px 24px 20px; border-bottom: 1px solid var(--line); }
+.panel-heading { display: flex; align-items: center; justify-content: space-between; height: var(--editor-head-h); padding: 10px 24px; border-bottom: 1px solid var(--line); }
 .panel-kicker { display: block; margin-bottom: 5px; color: #8d99a5; font-size: 10px; font-weight: 800; }
 .panel-heading h2 { margin: 0; font-size: 18px; line-height: 1.2; }
 .panel-count { color: #b5c0ca; font-size: 24px; line-height: 1; font-weight: 750; font-variant-numeric: tabular-nums; }
@@ -270,6 +271,7 @@ html[lang^="zh"] .language-option[data-language="en"], html[lang^="en"] .languag
   .app-shell { display: flex; flex-direction: column; height: auto; min-height: 0; }
   .work-column { grid-template-rows: 62px minmax(390px, 62svh) 33px; }
   .side-panel { display: grid; grid-template-rows: auto auto auto auto; overflow: visible; border-left: 0; border-top: 1px solid var(--line); }
+  .panel-heading { height: auto; padding: 24px 18px 20px; }
   .results-list { max-height: 390px; overflow-y: auto; }
   .canvas-scroll { padding: 18px 18px 42px; }
   .preview-art { width: var(--zoom); }
