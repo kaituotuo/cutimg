@@ -14,6 +14,22 @@
 
 浏览器处理超大图片时受设备内存和 Canvas 限制。当前输入上限为 100 MB / 1.8 亿像素，ZIP 最多包含 100 张；单张输出超过 16,384 px 或 6,500 万像素时需要继续分割。
 
+## 界面预览
+
+以下截图来自当前版本的实际界面，展示从打开长图到导出切片的主要状态。
+
+### 打开长图
+
+![Cutimg 空态界面：打开长图开始分割](docs/screenshots/01-empty.png)
+
+### 等高分割
+
+![Cutimg 等高分割界面：设置目标高度并预览切片](docs/screenshots/02-equal-split.png)
+
+### 手动分割
+
+![Cutimg 手动分割界面：拖动、输入或删除分割线](docs/screenshots/03-manual-split.png)
+
 ## 本地运行
 
 ```bash
