@@ -4,7 +4,7 @@
   "private": true,
   "description": "Split long images into precise, download-ready slices in the browser.",
   "scripts": {
-    "test": "node tests/core.test.cjs",
+    "test": "node tests/core.test.cjs && node tests/country-block.test.cjs",
     "test:browser": "node tests/browser.test.cjs"
   },
   "devDependencies": {

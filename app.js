@@ -26,7 +26,8 @@
     sliceTotal: $("slice-total"), sliceHeight: $("slice-height"), panelCount: $("panel-count"),
     resultsCount: $("results-count"), resultsList: $("results-list"), downloadAll: $("download-all"),
     topExport: $("top-export"), exportProgress: $("export-progress"), progressFill: $("progress-fill"),
-    progressLabel: $("progress-label"), cancelExport: $("cancel-export"), toast: $("toast")
+    progressLabel: $("progress-label"), cancelExport: $("cancel-export"), toast: $("toast"),
+    policyOpen: $("policy-open"), policyDialog: $("policy-dialog"), policyClose: $("policy-close")
   };
 
   const state = {
@@ -54,6 +55,9 @@
     document.documentElement.lang = state.language === "zh" ? "zh-CN" : "en";
     document.title = tr("documentTitle");
     document.querySelector('meta[name="description"]')?.setAttribute("content", tr("metaDescription"));
+    for (const node of document.querySelectorAll("[data-i18n-content]")) {
+      node.setAttribute("content", tr(node.dataset.i18nContent));
+    }
     for (const node of document.querySelectorAll("[data-i18n]")) {
       node.textContent = tr(node.dataset.i18n);
     }
@@ -797,6 +801,19 @@
 
   function exportOne(index) { return exportPieces(index); }
 
+  function openPolicy() {
+    if (!els.policyDialog) return;
+    if (typeof els.policyDialog.showModal === "function") els.policyDialog.showModal();
+    else els.policyDialog.setAttribute("open", "");
+    refreshIcons();
+  }
+
+  function closePolicy() {
+    if (!els.policyDialog) return;
+    if (typeof els.policyDialog.close === "function" && els.policyDialog.open) els.policyDialog.close();
+    else els.policyDialog.removeAttribute("open");
+  }
+
   els.upload.addEventListener("click", (event) => { event.stopPropagation(); els.fileInput.click(); });
   els.replace.addEventListener("click", () => els.fileInput.click());
   els.remove?.addEventListener("click", removeImage);
@@ -884,6 +901,11 @@
   els.downloadAll.addEventListener("click", () => exportPieces());
   els.topExport.addEventListener("click", () => exportPieces());
   els.cancelExport.addEventListener("click", () => { state.exportCancelled = true; els.progressLabel.textContent = tr("cancelling"); });
+  els.policyOpen?.addEventListener("click", openPolicy);
+  els.policyClose?.addEventListener("click", closePolicy);
+  els.policyDialog?.addEventListener("click", (event) => {
+    if (event.target === els.policyDialog) closePolicy();
+  });
 
   if (typeof ResizeObserver === "function") {
     new ResizeObserver(scheduleGuideLayout).observe(els.image);
